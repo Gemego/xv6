@@ -12,7 +12,6 @@ int main(int argc, char *argv[])
     else
     {
         fprintf(2, "usage: sleep [num of ticks]\n");
-        fprintf(2, "argc = %d\n", argc);
         exit(1);
     }
     exit(0);

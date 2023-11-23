@@ -4,5 +4,24 @@
 
 int main(int argc, char *argv[])
 {
-    pipe()
+    int p[2];
+    char buff[1];
+    pipe(p);
+
+    buff[0] = 'a';
+    write(p[1], buff, 1);
+
+    if (fork() == 0)
+    {
+        read(p[0], buff, 1);
+        int id = getpid();
+        printf("%d: received ping\n", id);
+    }
+    else if (fork() > 0)
+    {
+        wait((int *) 0);
+        int id = getpid();
+        printf("%d: received pong\n", id);
+    }
+    exit(0);
 }

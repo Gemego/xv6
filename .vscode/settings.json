@@ -1,6 +1,8 @@
 {
     "editor.fontSize": 14,
     "files.associations": {
-        "user.h": "c"
+        "user.h": "c",
+        "stat.h": "c",
+        "types.h": "c"
     }
 }

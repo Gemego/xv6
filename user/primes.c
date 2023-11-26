@@ -16,8 +16,11 @@ int main(int argc, char *argv[])
     }
 
     close(p[1]);
-    eliminate(p[0]);
+    
+    if (fork() > 0)
+        eliminate(p[0]);
 
+    wait((int *)0);
     exit(0);
 }
 
@@ -45,6 +48,8 @@ void eliminate(int fd)
 
     if (count > 0)
     {
-        eliminate(p1[0]);
-    }   
+        if (fork() > 0)
+            eliminate(p1[0]);
+    }
+    wait((int *)0);
 }

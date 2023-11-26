@@ -94,6 +94,7 @@ void recur_find(char *path, char *name)
         if(strlen(path) + 1 + DIRSIZ + 1 > sizeof buf)
         {
             printf("find: path too long\n");
+            printf("sizeof buf = %d\n", sizeof buf);
             break;
         }
         strcpy(buf, path);

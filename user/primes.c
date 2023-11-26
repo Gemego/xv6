@@ -26,9 +26,9 @@ void eliminate(int fd)
     int p1[2];
     pipe(p1);
 
-    int seive_num;
-    int this_prim;
-    int count;
+    int seive_num = 0;
+    int this_prim = 0;
+    int count = 0;
     if (read(fd, (char *)&seive_num, 4) == 4)
     {
         printf("prime %d\n", seive_num);

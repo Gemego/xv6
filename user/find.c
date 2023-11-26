@@ -60,18 +60,20 @@ char* get_filename(char *path)
 
 void recur_find(char *path, char *name)
 {
-    char buf[512], *p;
+    char *p;
     int fd;
     struct dirent de;
     struct stat st;
 
-    if((fd = open(path, O_RDONLY)) < 0)
+    char *buf = (char *)malloc(512);
+
+    if ((fd = open(path, O_RDONLY)) < 0)
     {
         fprintf(2, "find: cannot open %s\n", path);
         exit(1);
     }
 
-    if(fstat(fd, &st) < 0)
+    if (fstat(fd, &st) < 0)
     {
         fprintf(2, "find: cannot stat %s\n", path);
         close(fd);
@@ -91,23 +93,24 @@ void recur_find(char *path, char *name)
     case T_DIR:
         if(strlen(path) + 1 + DIRSIZ + 1 > sizeof buf)
         {
-            printf("ls: path too long\n");
+            printf("find: path too long\n");
             break;
         }
         strcpy(buf, path);
-    p = buf+strlen(buf);
-    *p++ = '/';
-    while(read(fd, &de, sizeof(de)) == sizeof(de)){
-      if(de.inum == 0)
-        continue;
-      memmove(p, de.name, DIRSIZ);
-      p[DIRSIZ] = 0;
-      if(stat(buf, &st) < 0){
-        printf("ls: cannot stat %s\n", buf);
-        continue;
-      }
-      printf("%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
+        p = buf + strlen(buf);
+        *p++ = '/';
+        while(read(fd, &de, sizeof(de)) == sizeof(de))
+        {
+            if(de.inum == 0)
+                continue;
+      
+            memmove(p, de.name, DIRSIZ);
+            p[DIRSIZ] = 0;
+
+            recur_find(buf, name);
+            free((void *)buf);
+        }
+    
+        break;
     }
-    break;
-  }
 }

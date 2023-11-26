@@ -22,5 +22,7 @@ int main(int argc, char *argv[])
         int id = getpid();
         printf("%d: received pong\n", id);
     }
+    close(p[0]);
+    close(p[1]);
     exit(0);
 }

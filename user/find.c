@@ -20,5 +20,11 @@ int main(int argc, char *argv[])
     struct dirent de;
     struct stat st;
 
+    if((fd = open(path, O_RDONLY)) < 0)
+    {
+        fprintf(2, "ls: cannot open %s\n", path);
+        exit(1);
+    }
+
     
 }

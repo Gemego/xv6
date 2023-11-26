@@ -22,7 +22,14 @@ int main(int argc, char *argv[])
 
     if((fd = open(path, O_RDONLY)) < 0)
     {
-        fprintf(2, "ls: cannot open %s\n", path);
+        fprintf(2, "find: cannot open %s\n", path);
+        exit(1);
+    }
+
+    if(fstat(fd, &st) < 0)
+    {
+        fprintf(2, "find: cannot stat %s\n", path);
+        close(fd);
         exit(1);
     }
 

@@ -65,7 +65,8 @@ void recur_find(char *path, char *name)
     struct dirent de;
     struct stat st;
 
-    char *buf = (char *)malloc(512);
+    void *tem = malloc(512);
+    char *buf = (char *)tem;
 
     if ((fd = open(path, O_RDONLY)) < 0)
     {

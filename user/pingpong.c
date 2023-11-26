@@ -5,10 +5,9 @@
 int main(int argc, char *argv[])
 {
     int p[2];
-    char buff[1];
+    char buff[1] = {'a'};
     pipe(p);
 
-    buff[0] = 'a';
     write(p[1], buff, 1);
 
     if (fork() == 0)

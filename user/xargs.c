@@ -5,7 +5,12 @@
 
 int main(int argc, char *argv[])
 {
-
+    if (fork() == 0)
+    {
+        // read()
+    }
+    
+    wait((int *)0);
 
     exit(0);
 }

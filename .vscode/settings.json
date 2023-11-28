@@ -5,6 +5,7 @@
         "stat.h": "c",
         "types.h": "c",
         "fs.h": "c",
-        "param.h": "c"
+        "param.h": "c",
+        "fcntl.h": "c"
     }
 }

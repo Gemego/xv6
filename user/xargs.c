@@ -6,7 +6,13 @@
 int main(int argc, char *argv[])
 {
     char output_buf[512];
-    // char *loc_argv[MAXARG];
+    char **loc_argv = (char **)malloc((MAXARG + argc) * sizeof(char *));
+    
+    memset((void *)loc_argv, 0, (MAXARG + argc) * sizeof(char *));
+    for (int i = 1; i < argc; i++)
+    {
+        loc_argv[i - 1] = argv[i];
+    }
 
     if (fork() == 0)
     {
@@ -17,14 +23,24 @@ int main(int argc, char *argv[])
         {
             if (*(p - 1) == '\n')
             {
-                *(p - 1) == '\0';
+                *(p - 1) = '\0';
                 int len = strlen(t);
+                printf("len = %d\n", len);
                 char *tem_argv = (char *)malloc(len);
                 memcpy(tem_argv, t, len);
 
-                exec(argv[1], &tem_argv);
+                int i;
+                for (i = 1; i < argc; i++)
+                {
+                    loc_argv[i - 1] = argv[i];
+                }
+                loc_argv[i - 1] = tem_argv;
 
-                t = t + len + 1;
+                exec(argv[1], loc_argv);
+                free((void *)tem_argv);
+                memset((void *)loc_argv, 0, i);
+
+                t = p;
             }
         }
         exit(0);

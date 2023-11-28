@@ -30,7 +30,6 @@ int main(int argc, char *argv[])
             t = p;
         }
     }
-    // printf("loc_idx = %d\n", loc_idx);
 
     recur_exec(argc, argv, loc_argv, 0, loc_idx);
     

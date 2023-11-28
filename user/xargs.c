@@ -5,6 +5,7 @@
 
 int main(int argc, char *argv[])
 {
+    char buf[512];
     if (fork() == 0)
     {
         // read()

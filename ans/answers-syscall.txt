@@ -1,0 +1,2 @@
+usertrap
+7, represents for the index number of SYS_exec

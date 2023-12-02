@@ -132,7 +132,7 @@ void
 syscall(void)
 {
   int num;
-  struct proc *p = myproc();
+  volatile struct proc *p = myproc();
 
   num = p->trapframe->a7;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {

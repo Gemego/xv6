@@ -1,2 +1,6 @@
 usertrap
 7, represents for the index number of SYS_exec
+it was in SIE(SIE=1 means interrupts are taken in superior mode) and UBE(UBE=1 means big-endian) mode
+80002052:	00002683          	lw	a3,0(zero) # 0 <_entry-0x80000000>, num is in a3
+address 0 mapped in the space that is unused.
+the name of the binary initcode\000\000\000\000\000\000\000, pid is 1.

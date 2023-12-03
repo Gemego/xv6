@@ -194,6 +194,7 @@ UPROGS=\
 	$U/_find\
 	$U/_xargs\
 	$U/_uptime\
+	$U/_trace\
 
 ifeq ($(LAB),$(filter $(LAB), lock))
 UPROGS += \

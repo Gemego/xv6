@@ -168,29 +168,17 @@ syscall(void)
     // and store its return value in p->trapframe->a0
     p->trapframe->a0 = syscalls[num]();
 
-    if (num == 1 && (p->mask >> 1) == num)
+    if ((p->mask >> num) & 1)
     {
-      printf("syscall %s -> %d\n", syscalls_name[num - 1], p->pid);
-    }
-    
-
-    for (int i = 2; i <= NELEM(syscalls); i++)
-    {
-      
-    }
-    
-    if (p->mask != 0 && num == p->mask)
-    {
-      if (p->mask == 1)
+      if (num == 1)
       {
-        printf("syscall %s -> %d\n", syscalls_name[p->mask - 1], p->pid);
+        printf("syscall %s -> %d\n", syscalls_name[num - 1], p->pid);
       }
       else
       {
-        printf("syscall %s -> %d\n", syscalls_name[p->mask - 1], p->trapframe->a0);
+        printf("syscall %s -> %d\n", syscalls_name[num - 1], p->trapframe->a0);
       }
     }
-    
   } else {
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);

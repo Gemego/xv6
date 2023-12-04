@@ -8,8 +8,9 @@ int main(int argc, char *argv[])
     {
         uint32 mask = (uint32)atoi(argv[1]);
         trace(mask);
-        
-        char **tmp_argv = (char **)malloc((argc - 2) * sizeof(char *));
+
+        char **tmp_argv = (char **)malloc((argc - 1) * sizeof(char *));
+        memset((void *)tmp_argv, 0, (argc - 1) * sizeof(char *));
         for (int i = 0; i < argc - 2; i++)
         {
             tmp_argv[i] = argv[i + 2];

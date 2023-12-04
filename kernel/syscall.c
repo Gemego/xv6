@@ -130,6 +130,31 @@ static uint64 (*syscalls[])(void) = {
 [SYS_trace]   sys_trace,
 };
 
+static char* syscalls_name[NELEM(syscalls)] = {
+  "fork",
+  "exit",
+  "wait",
+  "pipe",
+  "read",
+  "kill",
+  "exec",
+  "fstat",
+  "chdir",
+  "dup",
+  "getpid",
+  "sbrk",
+  "sleep",
+  "uptime",
+  "open",
+  "write",
+  "mknod",
+  "unlink",
+  "link",
+  "mkdir",
+  "close",
+  "trace",
+};
+
 void
 syscall(void)
 {
@@ -142,6 +167,30 @@ syscall(void)
     // Use num to lookup the system call function for num, call it,
     // and store its return value in p->trapframe->a0
     p->trapframe->a0 = syscalls[num]();
+
+    if (num == 1 && (p->mask >> 1) == num)
+    {
+      printf("syscall %s -> %d\n", syscalls_name[num - 1], p->pid);
+    }
+    
+
+    for (int i = 2; i <= NELEM(syscalls); i++)
+    {
+      
+    }
+    
+    if (p->mask != 0 && num == p->mask)
+    {
+      if (p->mask == 1)
+      {
+        printf("syscall %s -> %d\n", syscalls_name[p->mask - 1], p->pid);
+      }
+      else
+      {
+        printf("syscall %s -> %d\n", syscalls_name[p->mask - 1], p->trapframe->a0);
+      }
+    }
+    
   } else {
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);

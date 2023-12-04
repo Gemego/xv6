@@ -14,4 +14,5 @@ int main(int argc, char *argv[])
         fprintf(2, "usage: trace [system calls mask] [cmd]\n");
         exit(1);
     }
+    exit(0);
 }

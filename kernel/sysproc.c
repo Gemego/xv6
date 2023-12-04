@@ -94,5 +94,9 @@ sys_uptime(void)
 
 uint64 sys_trace(void)
 {
+    int msk;
 
+    argint(0, &msk);
+    myproc()->mask = msk;
+    return 0;
 }

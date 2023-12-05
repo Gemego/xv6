@@ -6,6 +6,7 @@
         "types.h": "c",
         "fs.h": "c",
         "param.h": "c",
-        "fcntl.h": "c"
+        "fcntl.h": "c",
+        "riscv.h": "c"
     }
 }

@@ -55,6 +55,7 @@ procinit(void)
       initlock(&p->lock, "proc");
       p->state = UNUSED;
       p->kstack = KSTACK((int) (p - proc));
+      p->mask = 0;
   }
 }
 
@@ -168,7 +169,9 @@ freeproc(struct proc *p)
   p->chan = 0;
   p->killed = 0;
   p->xstate = 0;
+  p->mask = 0;
   p->state = UNUSED;
+  p->mask = 0;
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -321,6 +324,8 @@ fork(void)
   acquire(&np->lock);
   np->state = RUNNABLE;
   release(&np->lock);
+
+  np->mask = p->mask; // copy mask of parent
 
   return pid;
 }
@@ -685,4 +690,21 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+int proccount(void)
+{
+  int proc_num = 0;
+
+  struct proc *pp = 0;
+
+  for(pp = proc; pp < &proc[NPROC]; pp++)
+  {
+    if(pp->state != UNUSED)
+    {
+      proc_num += 1;
+    }
+  }
+
+  return proc_num;
 }

@@ -1,26 +1,27 @@
+#include "kernel/param.h"
 #include "kernel/types.h"
 #include "kernel/stat.h"
 #include "user/user.h"
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
-    if (argc > 2)
-    {
-        uint32 mask = (uint32)atoi(argv[1]);
-        trace(mask);
+  int i;
+  char *nargv[MAXARG];
 
-        char **tmp_argv = (char **)malloc((argc - 1) * sizeof(char *));
-        memset((void *)tmp_argv, 0, (argc - 1) * sizeof(char *));
-        for (int i = 0; i < argc - 2; i++)
-        {
-            tmp_argv[i] = argv[i + 2];
-        }
-        exec(argv[2], tmp_argv);
-    }
-    else
-    {
-        fprintf(2, "usage: trace [system calls mask] [cmd]\n");
-        exit(1);
-    }
-    exit(0);
+  if(argc < 3 || (argv[1][0] < '0' || argv[1][0] > '9')){
+    fprintf(2, "Usage: %s mask command\n", argv[0]);
+    exit(1);
+  }
+
+  if (trace(atoi(argv[1])) < 0) {
+    fprintf(2, "%s: trace failed\n", argv[0]);
+    exit(1);
+  }
+  
+  for(i = 2; i < argc && i < MAXARG; i++){
+    nargv[i-2] = argv[i];
+  }
+  exec(nargv[0], nargv);
+  exit(0);
 }

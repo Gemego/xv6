@@ -137,6 +137,12 @@ static uint64 (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 [SYS_trace]   sys_trace,
 [SYS_sysinfo]   sys_sysinfo,
+#ifdef LAB_NET
+[SYS_connect] sys_connect,
+#endif
+#ifdef LAB_PGTBL
+[SYS_pgaccess] sys_pgaccess,
+#endif
 };
 
 static char* syscalls_name[NELEM(syscalls)] = {
@@ -163,12 +169,8 @@ static char* syscalls_name[NELEM(syscalls)] = {
   "close",
   "trace",
   "sysinfo",
-#ifdef LAB_NET
-[SYS_connect] sys_connect,
-#endif
-#ifdef LAB_PGTBL
-[SYS_pgaccess] sys_pgaccess,
-#endif
+  "connect",
+  "pgaccess",
 };
 
 

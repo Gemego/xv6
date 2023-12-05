@@ -195,6 +195,7 @@ UPROGS=\
 	$U/_xargs\
 	$U/_uptime\
 	$U/_trace\
+	$U/_sysinfotest\
 
 ifeq ($(LAB),$(filter $(LAB), lock))
 UPROGS += \

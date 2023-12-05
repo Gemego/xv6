@@ -5,7 +5,7 @@ from gradelib import *
 
 r = Runner(save("xv6.out"))
 
-@test(5, "answers-syscall.txt")
+@test(5, "ans/answers-syscall.txt")
 def test_answers():
     # just a simple sanity check, will be graded manually
     check_answers("answers-syscall.txt")

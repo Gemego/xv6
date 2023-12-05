@@ -90,7 +90,7 @@ int kcount(void)
   r = kmem.freelist;
   while(r)
   {
-    kmem.freelist = r->next;
+    r = r->next;
     free_mem += PGSIZE;
   }
   release(&kmem.lock);

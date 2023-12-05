@@ -110,12 +110,13 @@ uint64 sys_sysinfo(void)
     struct proc *proc_p = myproc();
 
     struct sysinfo sinfo;
+    sinfo.freemem = (uint64)kcount();
+    sinfo.nproc = (uint64)proccount();
 
-    if (copyout(proc_p->pagetable, (uint64)&sinfo, (char *)info_p, sizeof(struct sysinfo)) < 0)
+    if (copyout(proc_p->pagetable, info_p, (char *)&sinfo, sizeof(struct sysinfo)) < 0)
     {
       return -1;
     }
-    
 
     return 0;
 }

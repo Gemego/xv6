@@ -449,3 +449,8 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     return -1;
   }
 }
+
+int vmprint(pagetable_t pagetable)
+{
+  return 0;
+}

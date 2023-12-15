@@ -56,6 +56,9 @@ procinit(void)
       p->state = UNUSED;
       p->kstack = KSTACK((int) (p - proc));
       p->mask = 0;
+      #ifdef LAB_PGTBL
+      p->usyscall = 0;
+      #endif
   }
 }
 

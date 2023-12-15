@@ -226,7 +226,7 @@ proc_pagetable(struct proc *p)
 
   #ifdef LAB_PGTBL
   if(mappages(pagetable, USYSCALL, PGSIZE,
-              (uint64)(p->usyscall), PTE_R | PTE_U) < 0){
+              (uint64)(p->usyscall), PTE_R | PTE_W | PTE_U) < 0){
     uvmunmap(pagetable, USYSCALL, 1, 0);
     uvmfree(pagetable, 0);
     return 0;

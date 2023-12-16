@@ -452,5 +452,6 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 
 int vmprint(pagetable_t pagetable)
 {
+  printf("page table %x\n", (uint64) pagetable);
   return 0;
 }

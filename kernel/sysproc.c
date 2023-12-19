@@ -72,8 +72,8 @@ sys_sleep(void)
 
 
 #ifdef LAB_PGTBL
-int
-sys_pgaccess(void)
+
+inline int _pgcheck(int pte_bit)
 {
   // lab pgtbl: your code here.
 
@@ -91,10 +91,10 @@ sys_pgaccess(void)
   for (int i = 0; i < page_num; i++)
   {
     pte_t *pte = walk(proc_p->pagetable, buf + PGSIZE * i, 0);
-    if (*pte & PTE_A)
+    if (*pte & pte_bit)
     {
       tem_abits |= 1 << i;
-      *pte &= ~PTE_A;
+      *pte &= ~pte_bit;
     }
   }
   
@@ -107,37 +107,19 @@ sys_pgaccess(void)
 }
 
 int
+sys_pgaccess(void)
+{
+  // lab pgtbl: your code here.
+
+  return _pgcheck(PTE_A);
+}
+
+int
 sys_pgdirty(void)
 {
   // lab pgtbl: your code here.
 
-  uint64 buf = 0; // char *buf
-  int page_num = 0;
-  uint64 abits = 0; // unsigned int abits
-
-  argaddr(0, &buf);
-  argint(1, &page_num);
-  argaddr(2, &abits);
-
-  unsigned int tem_abits = 0;
-  struct proc *proc_p = myproc();
-
-  for (int i = 0; i < page_num; i++)
-  {
-    pte_t *pte = walk(proc_p->pagetable, buf + PGSIZE * i, 0);
-    if (*pte & PTE_D)
-    {
-      tem_abits |= 1 << i;
-      *pte &= ~PTE_A;
-    }
-  }
-  
-  if (copyout(proc_p->pagetable, abits, (char *)&tem_abits, sizeof(tem_abits)) < 0)
-  {
-    return -1;
-  }
-
-  return 0;
+  return _pgcheck(PTE_D);
 }
 
 #endif

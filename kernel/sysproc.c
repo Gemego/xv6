@@ -105,6 +105,41 @@ sys_pgaccess(void)
 
   return 0;
 }
+
+int
+sys_pgdirty(void)
+{
+  // lab pgtbl: your code here.
+
+  uint64 buf = 0; // char *buf
+  int page_num = 0;
+  uint64 abits = 0; // unsigned int abits
+
+  argaddr(0, &buf);
+  argint(1, &page_num);
+  argaddr(2, &abits);
+
+  unsigned int tem_abits = 0;
+  struct proc *proc_p = myproc();
+
+  for (int i = 0; i < page_num; i++)
+  {
+    pte_t *pte = walk(proc_p->pagetable, buf + PGSIZE * i, 0);
+    if (*pte & PTE_D)
+    {
+      tem_abits |= 1 << i;
+      *pte &= ~PTE_A;
+    }
+  }
+  
+  if (copyout(proc_p->pagetable, abits, (char *)&tem_abits, sizeof(tem_abits)) < 0)
+  {
+    return -1;
+  }
+
+  return 0;
+}
+
 #endif
 
 uint64

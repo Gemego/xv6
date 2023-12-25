@@ -177,7 +177,6 @@ static char* syscalls_name[NELEM(syscalls)] = {
 };
 
 
-
 void
 syscall(void)
 {

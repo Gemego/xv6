@@ -267,7 +267,7 @@ def random_str(n=8):
 def check_time():
     try:
         print("")
-        with open('time.txt') as f:
+        with open('ans/time.txt') as f:
             d = f.read().strip()
             if not re.match(r'^\d+$', d):
                 raise AssertionError('time.txt does not contain a single integer (number of hours spent on the lab)')

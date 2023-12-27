@@ -147,7 +147,7 @@ static uint64 (*syscalls[])(void) = {
 #endif
 };
 
-static char* syscalls_name[NELEM(syscalls)] = {
+static char* syscalls_name[] = {
   "fork",
   "exit",
   "wait",
@@ -172,8 +172,10 @@ static char* syscalls_name[NELEM(syscalls)] = {
   "trace",
   "sysinfo",
   "connect",
+  #ifdef LAB_PGTBL
   "pgaccess",
   "pgdirty",
+  #endif
 };
 
 

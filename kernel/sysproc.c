@@ -184,6 +184,10 @@ int sys_sigalarm(void)
   argint(0, &interval);
   argaddr(1, &handler);
 
+  struct proc *proc_p = myproc();
+  proc_p->interval = interval;
+  proc_p->handler = handler;
+
   return 0;
 }
 

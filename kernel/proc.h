@@ -106,6 +106,11 @@ struct proc {
   char name[16];               // Process name (debugging)
   int mask;                    // System call mask
   #ifdef LAB_PGTBL
-  struct usyscall *usyscall;             // Read-only page between userspace and the kernel
+  struct usyscall *usyscall;   // Read-only page between userspace and the kernel
+  #endif
+  #ifdef LAB_TRAPS
+  int interval;
+  uint64 *handler;
+  int pass_ticks;
   #endif
 };

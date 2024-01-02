@@ -174,3 +174,21 @@ uint64 sys_sysinfo(void)
 
     return 0;
 }
+
+#ifdef LAB_TRAPS
+int sys_sigalarm(void)
+{
+  int interval;
+  uint64 handler;
+
+  argint(0, &interval);
+  argaddr(1, &handler);
+
+  return 0;
+}
+
+int sys_sigreturn(void)
+{
+  return 0;
+}
+#endif

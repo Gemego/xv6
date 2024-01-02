@@ -41,3 +41,5 @@ entry("sysinfo");
 entry("connect");
 entry("pgaccess");
 entry("pgdirty");
+entry("sigalarm");
+entry("sigreturn");

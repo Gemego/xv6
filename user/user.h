@@ -33,6 +33,10 @@ int pgaccess(void *base, int len, void *mask);
 // usyscall region
 int ugetpid(void);
 #endif
+#ifdef LAB_TRAPS
+int sigalarm(int ticks, void (*handler)());
+int sigreturn(void);
+#endif
 
 // ulib.c
 int stat(const char*, struct stat*);

@@ -59,6 +59,11 @@ procinit(void)
       #ifdef LAB_PGTBL
       p->usyscall = 0;
       #endif
+      #ifdef LAB_TRAPS
+      p->interval = 0;
+      p->handler = 0;
+      p->pass_ticks = 0;
+      #endif
   }
 }
 
@@ -190,6 +195,11 @@ freeproc(struct proc *p)
   p->mask = 0;
   #ifdef LAB_PGTBL
   p->usyscall = 0;
+  #endif
+  #ifdef LAB_TRAPS
+  p->interval = 0;
+  p->handler = 0;
+  p->pass_ticks = 0;
   #endif
 }
 

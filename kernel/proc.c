@@ -63,6 +63,8 @@ procinit(void)
       p->interval = 0;
       p->handler = 0;
       p->pass_ticks = 0;
+      p->in_handler = 0;
+      p->user_trapframe = 0;
       #endif
   }
 }
@@ -141,6 +143,14 @@ found:
     return 0;
   }
 
+  #ifdef LAB_TRAPS
+  if((p->user_trapframe = (struct trapframe *)kalloc()) == 0){
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
+  #endif
+
   // Allocate a read-only page for pid
   #ifdef LAB_PGTBL
   if((p->usyscall = (struct usyscall *)kalloc()) == 0){
@@ -200,6 +210,10 @@ freeproc(struct proc *p)
   p->interval = 0;
   p->handler = 0;
   p->pass_ticks = 0;
+  p->in_handler = 0;
+  if (p->user_trapframe)
+    kfree((void*)p->user_trapframe);
+  p->user_trapframe = 0;
   #endif
 }
 

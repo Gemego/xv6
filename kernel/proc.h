@@ -110,7 +110,10 @@ struct proc {
   #endif
   #ifdef LAB_TRAPS
   int interval;
-  uint64 *handler;
+  uint64 handler;
   int pass_ticks;
+  int in_handler;
+
+  struct trapframe *user_trapframe;
   #endif
 };

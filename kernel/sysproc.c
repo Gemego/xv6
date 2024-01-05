@@ -185,14 +185,22 @@ int sys_sigalarm(void)
   argaddr(1, &handler);
 
   struct proc *proc_p = myproc();
+  acquire(&proc_p->lock);
   proc_p->interval = interval;
   proc_p->handler = handler;
+  release(&proc_p->lock);
 
   return 0;
 }
 
 int sys_sigreturn(void)
 {
-  return 0;
+  struct proc *p = myproc();
+  acquire(&p->lock);
+  *(p->trapframe) = *(p->user_trapframe);
+  p->in_handler = 0;
+  release(&p->lock);
+
+  return p->user_trapframe->a0;
 }
 #endif

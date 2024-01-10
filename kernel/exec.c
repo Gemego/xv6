@@ -128,6 +128,11 @@ exec(char *path, char **argv)
   p->trapframe->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz);
 
+  if(p->pid==1)
+  {
+    vmprint(p->pagetable);
+  }  
+
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
  bad:
@@ -164,3 +169,5 @@ loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz
   
   return 0;
 }
+
+

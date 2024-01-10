@@ -78,7 +78,23 @@ usertrap(void)
 
   // give up the CPU if this is a timer interrupt.
   if(which_dev == 2)
+  {
+    #ifdef LAB_TRAPS
+    if(p->interval > 0)
+    {
+      acquire(&p->lock);
+      p->pass_ticks += 1;
+      if ((p->pass_ticks % p->interval == 0) && (p->in_handler == 0))
+      {
+        *(p->user_trapframe) = *(p->trapframe);
+        p->trapframe->epc = p->handler;
+        p->in_handler = 1;
+      }
+      release(&p->lock);
+    }
+    #endif
     yield();
+  }
 
   usertrapret();
 }

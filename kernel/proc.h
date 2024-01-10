@@ -104,4 +104,16 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  int mask;                    // System call mask
+  #ifdef LAB_PGTBL
+  struct usyscall *usyscall;   // Read-only page between userspace and the kernel
+  #endif
+  #ifdef LAB_TRAPS
+  int interval;
+  uint64 handler;
+  int pass_ticks;
+  int in_handler;
+
+  struct trapframe *user_trapframe;
+  #endif
 };

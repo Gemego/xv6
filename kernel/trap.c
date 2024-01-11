@@ -65,6 +65,28 @@ usertrap(void)
     intr_on();
 
     syscall();
+  } else if (r_scause() == 13) {  // load page fault
+    char *mem;
+    if((mem = kalloc()) == 0)
+      exit(-1);
+
+    uint64 stval = r_stval(), pa; // stval stores the faulting virtual address.
+    uint flags;
+    pte_t *pte_p;
+
+    pte_p = walk(p->pagetable, stval, 0);
+    pa = PTE2PA(*pte_p);
+    flags = PTE_FLAGS(*pte_p);
+    if (flags & PTE_COW)
+    {
+      flags |= PTE_W;
+      memmove(mem, (char*)pa, PGSIZE);
+      uvmunmap(p->pagetable, stval, 1, 0);
+      if (mappages(p->pagetable, stval, PGSIZE, (uint64)mem, flags) != 0)
+      {
+        exit(-1);
+      }
+    }
   } else if((which_dev = devintr()) != 0){
     // ok
   } else {

@@ -347,8 +347,13 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       panic("uvmcopy: page not present");
     pa = PTE2PA(*pte);
     flags = PTE_FLAGS(*pte);
-    flags &= ~PTE_W;
-    *pte &= ~PTE_W;
+    if ((flags & PTE_W) != 0)
+    {
+      flags &= ~PTE_W;
+      flags |= PTE_COW;
+      *pte &= ~PTE_W;
+      *pte |= PTE_COW;
+    }
 
     if (mappages(new, i, PGSIZE, (uint64)pa, flags) != 0) {
       goto err;

@@ -77,7 +77,7 @@ usertrap(void)
     pte_p = walk(p->pagetable, stval, 0);
     pa = PTE2PA(*pte_p);
     flags = PTE_FLAGS(*pte_p);
-    if (flags & PTE_COW)
+    if ((flags & PTE_COW) != 0)
     {
       flags |= PTE_W;
       memmove(mem, (char*)pa, PGSIZE);

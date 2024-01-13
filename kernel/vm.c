@@ -292,6 +292,7 @@ freewalk(pagetable_t pagetable)
       freewalk((pagetable_t)child);
       pagetable[i] = 0;
     } else if(pte & PTE_V){
+      vmprint(pagetable);
       panic("freewalk: leaf");
     }
   }
@@ -409,15 +410,33 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
     if(pte == 0 || (*pte & PTE_V) == 0 || (*pte & PTE_U) == 0 ||
        (*pte & PTE_W) == 0)
       return -1;
-    pa0 = PTE2PA(*pte);
-    n = PGSIZE - (dstva - va0);
-    if(n > len)
-      n = len;
-    memmove((void *)(pa0 + (dstva - va0)), src, n);
+    if ((*pte & PTE_COW) != 0)
+    {
+      printf("(*pte & PTE_COW) != 0\n");
+      // char *mem;
+      // uint flags = PTE_FLAGS(*pte);
+      // if((mem = kalloc()) == 0)
+      //   exit(-1);
+      // memmove(mem, (char*)PTE2PA(*pte), PGSIZE);
 
-    len -= n;
-    src += n;
-    dstva = va0 + PGSIZE;
+      // uvmunmap(pagetable, va0, 1, 0);
+      // if (mappages(pagetable, va0, PGSIZE, (uint64)mem, flags) != 0)
+      // {
+      //   exit(-1);
+      // }
+    }
+    else
+    {
+      pa0 = PTE2PA(*pte);
+      n = PGSIZE - (dstva - va0);
+      if(n > len)
+        n = len;
+      memmove((void *)(pa0 + (dstva - va0)), src, n);
+
+      len -= n;
+      src += n;
+      dstva = va0 + PGSIZE;
+    }
   }
   return 0;
 }

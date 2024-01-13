@@ -81,7 +81,7 @@ kalloc(void)
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
 
-  ref_count[(uint64)r - (uint64)end] += 1;
+  set_ref_count((uint64)r, 1);
 
   return (void*)r;
 }
@@ -105,40 +105,48 @@ int kcount(void)
 
 void set_ref_count(uint64 pa, int is_incre)
 {
-  if (pa <(uint64)end)  // must be trampoline
+  if (pa < (uint64)end)  // must be trampoline
     return;
   
-  uint64 pa_idx = pa >> 12;
-  uint64 end_idx = (uint64)end >> 12;
+  if (pa % PGSIZE != 0)
+    panic("set_ref_count(): pa must be aligned");
+  
+  uint64 end_bound = PGROUNDUP((uint64)end);
+
   if (is_incre)
   {
-    ref_count[pa_idx - (uint64)end_idx] += 1;
+    ref_count[pa - end_bound] += 1;
   }
   else
   {
-    ref_count[pa_idx - (uint64)end_idx] -= 1;
-    if (ref_count[pa_idx - (uint64)end_idx] < 0)
+    ref_count[pa - end_bound] -= 1;
+    if (ref_count[pa - end_bound] < 0)
       panic("ref_count has negative element");
   }
 }
 
 void clear_ref_count(uint64 pa)
 {
-  uint64 pa_idx = pa >> 12;
-  uint64 end_idx = (uint64)end >> 12;
-
-  if (pa <(uint64)end)
+  if (pa < (uint64)end)
     return;
-  ref_count[pa_idx - (uint64)end_idx] = 0;
+
+  if (pa % PGSIZE != 0)
+    panic("set_ref_count(): pa must be aligned");
+
+  uint64 end_bound = PGROUNDUP((uint64)end);
+
+  ref_count[pa - end_bound] = 0;
 }
 
 int get_ref_count(uint64 pa)
 {
-  uint64 pa_idx = pa >> 12;
-  uint64 end_idx = (uint64)end >> 12;
-
   if (pa < (uint64)end)
     panic("get_ref_count(): pa <(uint64)end");
 
-  return ref_count[pa_idx - (uint64)end_idx];
+  if (pa % PGSIZE != 0)
+    panic("get_ref_count(): pa must be aligned");
+
+  uint64 end_bound = PGROUNDUP((uint64)end);
+
+  return ref_count[pa - end_bound];
 }

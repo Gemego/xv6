@@ -67,6 +67,7 @@ exec(char *path, char **argv)
     sz = sz1;
     if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
       goto bad;
+    vmprint(pagetable);
   }
   iunlockput(ip);
   end_op();
@@ -128,7 +129,7 @@ exec(char *path, char **argv)
   p->trapframe->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz);
 
-  if (p->pid == 1)
+  if (p->pid >= 1)
   {
     vmprint(p->pagetable);
   }  

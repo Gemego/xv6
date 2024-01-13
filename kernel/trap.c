@@ -83,11 +83,12 @@ usertrap(void)
       flags &= ~PTE_COW;
       memmove(mem, (char*)pa, PGSIZE);
       uvmunmap(p->pagetable, PGROUNDDOWN(stval), 1, 0);
-      
+
       if (mappages(p->pagetable, PGROUNDDOWN(stval), PGSIZE, (uint64)mem, flags) != 0)
       {
         exit(-1);
       }
+      // vmprint(p->pagetable);
     }
     else
     {

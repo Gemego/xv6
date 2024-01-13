@@ -292,7 +292,7 @@ freewalk(pagetable_t pagetable)
       freewalk((pagetable_t)child);
       pagetable[i] = 0;
     } else if(pte & PTE_V){
-      vmprint(pagetable);
+      // vmprint(pagetable);
       panic("freewalk: leaf");
     }
   }
@@ -360,10 +360,6 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       *pte &= ~PTE_W;
       *pte |= PTE_COW;
     }
-    // if (flags & PTE_X)
-    // {
-    //   printf("mapped a PTE_X\n");
-    // }
 
     if (mappages(new, i, PGSIZE, pa, flags) != 0) {
       goto err;
@@ -372,7 +368,8 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       set_ref_count(pa, 1);
     }
   }
-  // printf("i = %x\n", i);
+  // printf("vmprint(new):\n");
+  // vmprint(new);
   return 0;
 
 err:

@@ -270,6 +270,8 @@ proc_freepagetable(pagetable_t pagetable, uint64 sz)
   #ifdef LAB_PGTBL
   uvmunmap(pagetable, USYSCALL, 1, 0);
   #endif
+  // printf("proc_freepagetable vmprint\n");
+  // vmprint(pagetable);
   uvmfree(pagetable, sz);
 }
 

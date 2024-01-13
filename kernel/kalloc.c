@@ -18,6 +18,8 @@ struct run {
   struct run *next;
 };
 
+uint8 ref_count[2^15] = {0};
+
 struct {
   struct spinlock lock;
   struct run *freelist;
@@ -78,6 +80,9 @@ kalloc(void)
 
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
+
+  ref_count[(uint64)r - (uint64)end] += 1;
+
   return (void*)r;
 }
 
@@ -96,4 +101,35 @@ int kcount(void)
   release(&kmem.lock);
 
   return free_mem;
+}
+
+void set_ref_count(uint64 pa, int is_incre)
+{
+  if (pa <(uint64)end)  // must be trampoline
+    return;
+  
+  if (is_incre)
+  {
+    ref_count[pa - (uint64)end] += 1;
+  }
+  else
+  {
+    ref_count[pa - (uint64)end] -= 1;
+    if (ref_count[pa - (uint64)end] < 0)
+      panic("ref_count has negative element");
+  }
+}
+
+void clear_ref_count(uint64 pa)
+{
+  if (pa <(uint64)end)
+    return;
+  ref_count[pa - (uint64)end] = 0;
+}
+
+int get_ref_count(uint64 pa)
+{
+  if (pa <(uint64)end)
+    panic("get_ref_count(): pa <(uint64)end");
+  return ref_count[pa - (uint64)end];
 }

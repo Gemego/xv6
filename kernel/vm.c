@@ -192,8 +192,13 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
       panic("uvmunmap: not a leaf");
     if(do_free){
       uint64 pa = PTE2PA(*pte);
-      kfree((void*)pa);
+      if (get_ref_count(pa) == 1)
+      {
+        clear_ref_count(pa);
+        kfree((void*)pa);
+      }
     }
+    set_ref_count((uint64)PTE2PA(*pte), 0);
     *pte = 0;
   }
 }
@@ -334,7 +339,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
 //     }
 //   }
 //   return 0;
-
+//
 // err:
 //   uvmunmap(new, 0, i / PGSIZE, 1);
 //   return -1;
@@ -349,7 +354,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
     flags = PTE_FLAGS(*pte);
     if ((flags & PTE_W) != 0)
     {
-      // flags &= ~PTE_W;
+      flags &= ~PTE_W;
       flags |= PTE_COW;
       *pte &= ~PTE_W;
       *pte |= PTE_COW;
@@ -362,8 +367,11 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
     if (mappages(new, i, PGSIZE, pa, flags) != 0) {
       goto err;
     }
+    else {
+      set_ref_count(pa, 1);
+    }
   }
-  printf("i = %x\n", i);
+  // printf("i = %x\n", i);
   return 0;
 
 err:

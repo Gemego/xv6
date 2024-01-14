@@ -126,9 +126,7 @@ exec(char *path, char **argv)
   p->sz = sz;
   p->trapframe->epc = elf.entry;  // initial program counter = main
   p->trapframe->sp = sp; // initial stack pointer
-  // vmprint(p->pagetable);
-  proc_freepagetable(oldpagetable, oldsz, pagetable);
-  // vmprint(p->pagetable);
+  proc_freepagetable(oldpagetable, oldsz);
 
   if (p->pid == 1)
   {
@@ -139,7 +137,7 @@ exec(char *path, char **argv)
 
  bad:
   if(pagetable)
-    proc_freepagetable(pagetable, sz, 0);
+    proc_freepagetable(pagetable, sz);
   if(ip){
     iunlockput(ip);
     end_op();

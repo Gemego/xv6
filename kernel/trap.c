@@ -88,7 +88,6 @@ usertrap(void)
       {
         exit(-1);
       }
-      // vmprint(p->pagetable);
     }
     else
     {

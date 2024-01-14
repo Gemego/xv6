@@ -62,6 +62,7 @@ void            ramdiskrw(struct buf*);
 // kalloc.c
 void*           kalloc(void);
 void            kfree(void *);
+void            kfree_init(void *);
 void            kinit(void);
 int             kcount(void);
 void            set_ref_count(uint64, int);

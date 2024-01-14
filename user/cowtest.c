@@ -34,9 +34,12 @@ simpletest()
   }
 
   if(pid == 0)
+  {
     exit(0);
+  }
 
   wait(0);
+  printf("\n=====here?=====\n");
 
   if(sbrk(-sz) == (char*)0xffffffffffffffffL){
     printf("sbrk(-%d) failed\n", sz);

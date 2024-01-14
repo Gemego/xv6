@@ -38,17 +38,38 @@ freerange(void *pa_start, void *pa_end)
 {
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start);
+  // is_kfree_init = 1;
   for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE)
   {
-    is_kfree_init = 1;
-    kfree(p);
+    kfree_init(p);
   }
+  // is_kfree_init = 0;
 }
 
 // Free the page of physical memory pointed at by pa,
 // which normally should have been returned by a
 // call to kalloc().  (The exception is when
 // initializing the allocator; see kinit above.)
+
+void
+kfree_init(void *pa)
+{
+  struct run *r;
+
+  if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
+    panic("kfree");
+
+  // Fill with junk to catch dangling refs.
+  memset(pa, 1, PGSIZE);
+
+  r = (struct run*)pa;
+
+  acquire(&kmem.lock);
+  r->next = kmem.freelist;
+  kmem.freelist = r;
+  release(&kmem.lock);
+}
+
 void
 kfree(void *pa)
 {
@@ -57,7 +78,9 @@ kfree(void *pa)
   if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
     panic("kfree");
 
+  // acquire(&kmem.lock);
   set_ref_count((uint64)pa, 0);
+  // release(&kmem.lock);
   if (get_ref_count((uint64)pa) == 0)
   {
     // Fill with junk to catch dangling refs.
@@ -84,12 +107,12 @@ kalloc(void)
   r = kmem.freelist;
   if(r)
     kmem.freelist = r->next;
+
   release(&kmem.lock);
+  set_ref_count((uint64)r, 1);
 
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
-
-  set_ref_count((uint64)r, 1);
 
   return (void*)r;
 }
@@ -114,7 +137,7 @@ int kcount(void)
 void set_ref_count(uint64 pa, int is_incre)
 {
   uint64 end_bound = PGROUNDUP((uint64)end);
-  if (pa < end_bound || is_kfree_init)  // must be trampoline
+  if (pa < end_bound)  // pa < end_bound must be trampoline
     return;
 
   if (pa % PGSIZE != 0)

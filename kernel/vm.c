@@ -163,6 +163,7 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
     if(*pte & PTE_V)
       panic("mappages: remap");
     *pte = PA2PTE(pa) | perm | PTE_V;
+    set_ref_count(pa, 1);
     if(a == last)
       break;
     a += PGSIZE;
@@ -360,12 +361,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
     if (mappages(new, i, PGSIZE, pa, flags) != 0) {
       goto err;
     }
-    else {
-      set_ref_count(pa, 1);
-    }
   }
-  // printf("vmprint(new):\n");
-  // vmprint(new);
   return 0;
 
 err:

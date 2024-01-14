@@ -64,7 +64,7 @@ void*           kalloc(void);
 void            kfree(void *);
 void            kfree_init(void *);
 void            kinit(void);
-int             kcount(void);
+uint64          kcount(void);
 void            set_ref_count(uint64, int);
 void            clear_ref_count(uint64);
 uint8             get_ref_count(uint64);

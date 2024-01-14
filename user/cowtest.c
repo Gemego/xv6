@@ -4,6 +4,8 @@
 
 #include "kernel/types.h"
 #include "kernel/memlayout.h"
+#include "kernel/sysinfo.h"
+#include "kernel/riscv.h"
 #include "user/user.h"
 
 // allocate more than half of physical memory,
@@ -14,15 +16,20 @@ simpletest()
 {
   uint64 phys_size = PHYSTOP - KERNBASE;
   int sz = (phys_size / 3) * 2;
+  struct sysinfo si;
 
   printf("simple: ");
-  
+  sysinfo(&si);
+  printf("start free pages: %d\n", si.freemem / PGSIZE);
+
   char *p = sbrk(sz);
   if(p == (char*)0xffffffffffffffffL){
     printf("sbrk(%d) failed\n", sz);
     // printf("here?\n");
     exit(-1);
   }
+  // sysinfo(&si);
+  // printf("sbrk used free pages: %d\n", si.freemem / PGSIZE);
 
   for(char *q = p; q < p + sz; q += 4096){
     *(int*)q = getpid();
@@ -36,6 +43,8 @@ simpletest()
 
   if(pid == 0)
   {
+    sysinfo(&si);
+    printf("child free pages: %d\n", si.freemem / PGSIZE);
     exit(0);
   }
 
@@ -45,7 +54,8 @@ simpletest()
     printf("sbrk(-%d) failed\n", sz);
     exit(-1);
   }
-
+  sysinfo(&si);
+  printf("end free pages: %d\n", si.freemem / PGSIZE);
   printf("ok\n");
 }
 

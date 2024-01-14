@@ -114,10 +114,10 @@ kalloc(void)
   return (void*)r;
 }
 
-int kcount(void)
+uint64 kcount(void)
 {
   struct run *r = 0;
-  int free_mem = 0;
+  uint64 free_mem = 0;
 
   acquire(&kmem.lock);
   r = kmem.freelist;
@@ -139,22 +139,20 @@ void set_ref_count(uint64 pa, int is_incre)
 
   if (pa % PGSIZE != 0)
     panic("set_ref_count(): pa must be aligned");
-  
+
   if (is_incre)
   {
     if (((pa - end_bound) >> 12) < 0x8000)
-    {
-      ref_count[(pa - end_bound) >> 12] += 1;
-    }
+      ref_count[((pa - end_bound) >> 12)] += 1;
     else
       panic("ref_count[pa - end_bound] index out of boundary");
   }
   else
   {
-    if (ref_count[(pa - end_bound) >> 12] == 0)
+    if (ref_count[((pa - end_bound) >> 12)] == 0)
       panic("ref_count[pa - end_bound] has already been zero");
     else
-      ref_count[(pa - end_bound) >> 12] -= 1;
+      ref_count[((pa - end_bound) >> 12)] -= 1;
   }
 }
 
@@ -167,7 +165,7 @@ void clear_ref_count(uint64 pa)
   if (pa % PGSIZE != 0)
     panic("set_ref_count(): pa must be aligned");
 
-  ref_count[(pa - end_bound) >> 12] = 0;
+  ref_count[((pa - end_bound) >> 12)] = 0;
 }
 
 uint8 get_ref_count(uint64 pa)
@@ -179,5 +177,5 @@ uint8 get_ref_count(uint64 pa)
   if (pa % PGSIZE != 0)
     panic("get_ref_count(): pa must be aligned");
 
-  return ref_count[(pa - end_bound) >> 12];
+  return ref_count[((uint64)pa - end_bound) >> 12];
 }

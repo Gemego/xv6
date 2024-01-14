@@ -163,7 +163,7 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
     if(*pte & PTE_V)
       panic("mappages: remap");
     *pte = PA2PTE(pa) | perm | PTE_V;
-    set_ref_count(pa, 1);
+    // set_ref_count(pa, 1);
     if(a == last)
       break;
     a += PGSIZE;
@@ -191,11 +191,12 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
       panic("uvmunmap: not mapped");
     if(PTE_FLAGS(*pte) == PTE_V)
       panic("uvmunmap: not a leaf");
-    if(do_free){
-      uint64 pa = PTE2PA(*pte);
+
+    uint64 pa = PTE2PA(*pte);
+    if(do_free) {
       kfree((void*)pa);
     } else {
-      set_ref_count((uint64)PTE2PA(*pte), 0);
+      // set_ref_count(pa, 0);
     }
     *pte = 0;
   }
@@ -246,6 +247,7 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm)
     mem = kalloc();
     if(mem == 0){
       uvmdealloc(pagetable, a, oldsz);
+      // printf("uvmalloc mem = kalloc failed\n");
       return 0;
     }
     memset(mem, 0, PGSIZE);
@@ -357,6 +359,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       *pte &= ~PTE_W;
       *pte |= PTE_COW;
     }
+    set_ref_count(pa, 1);
 
     if (mappages(new, i, PGSIZE, pa, flags) != 0) {
       goto err;
@@ -402,17 +405,17 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
     if ((*pte & PTE_COW) != 0)
     {
       printf("(*pte & PTE_COW) != 0\n");
-      // char *mem;
-      // uint flags = PTE_FLAGS(*pte);
-      // if((mem = kalloc()) == 0)
-      //   exit(-1);
-      // memmove(mem, (char*)PTE2PA(*pte), PGSIZE);
+      char *mem;
+      uint flags = PTE_FLAGS(*pte);
+      if((mem = kalloc()) == 0)
+        exit(-1);
+      memmove(mem, (char*)PTE2PA(*pte), PGSIZE);
 
-      // uvmunmap(pagetable, va0, 1, 0);
-      // if (mappages(pagetable, va0, PGSIZE, (uint64)mem, flags) != 0)
-      // {
-      //   exit(-1);
-      // }
+      uvmunmap(pagetable, va0, 1, 0);
+      if (mappages(pagetable, va0, PGSIZE, (uint64)mem, flags) != 0)
+      {
+        exit(-1);
+      }
     }
     else
     {

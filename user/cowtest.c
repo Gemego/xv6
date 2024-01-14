@@ -20,6 +20,7 @@ simpletest()
   char *p = sbrk(sz);
   if(p == (char*)0xffffffffffffffffL){
     printf("sbrk(%d) failed\n", sz);
+    // printf("here?\n");
     exit(-1);
   }
 
@@ -39,7 +40,6 @@ simpletest()
   }
 
   wait(0);
-  printf("\n=====here?=====\n");
 
   if(sbrk(-sz) == (char*)0xffffffffffffffffL){
     printf("sbrk(-%d) failed\n", sz);

@@ -64,7 +64,6 @@ exec(char *path, char **argv)
     uint64 sz1;
     if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz, flags2perm(ph.flags))) == 0)
       goto bad;
-    vmprint(pagetable);
     sz = sz1;
     if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
       goto bad;
@@ -127,7 +126,9 @@ exec(char *path, char **argv)
   p->sz = sz;
   p->trapframe->epc = elf.entry;  // initial program counter = main
   p->trapframe->sp = sp; // initial stack pointer
-  proc_freepagetable(oldpagetable, oldsz);
+  // vmprint(p->pagetable);
+  proc_freepagetable(oldpagetable, oldsz, pagetable);
+  // vmprint(p->pagetable);
 
   if (p->pid == 1)
   {
@@ -138,7 +139,7 @@ exec(char *path, char **argv)
 
  bad:
   if(pagetable)
-    proc_freepagetable(pagetable, sz);
+    proc_freepagetable(pagetable, sz, 0);
   if(ip){
     iunlockput(ip);
     end_op();

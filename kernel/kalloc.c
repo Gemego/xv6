@@ -19,6 +19,7 @@ struct run {
 };
 
 uint8 ref_count[2^15] = {0};
+uint is_kfree_init = 0;
 
 struct {
   struct spinlock lock;
@@ -38,7 +39,10 @@ freerange(void *pa_start, void *pa_end)
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start);
   for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE)
+  {
+    is_kfree_init = 1;
     kfree(p);
+  }
 }
 
 // Free the page of physical memory pointed at by pa,
@@ -53,17 +57,19 @@ kfree(void *pa)
   if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
     panic("kfree");
 
-  // Fill with junk to catch dangling refs.
-  memset(pa, 1, PGSIZE);
+  set_ref_count((uint64)pa, 0);
+  if (get_ref_count((uint64)pa) == 0)
+  {
+    // Fill with junk to catch dangling refs.
+    memset(pa, 1, PGSIZE);
 
-  r = (struct run*)pa;
+    r = (struct run*)pa;
 
-  acquire(&kmem.lock);
-  r->next = kmem.freelist;
-  kmem.freelist = r;
-  release(&kmem.lock);
-
-  clear_ref_count((uint64)pa);
+    acquire(&kmem.lock);
+    r->next = kmem.freelist;
+    kmem.freelist = r;
+    release(&kmem.lock);
+  }
 }
 
 // Allocate one 4096-byte page of physical memory.
@@ -107,48 +113,45 @@ int kcount(void)
 
 void set_ref_count(uint64 pa, int is_incre)
 {
-  if (pa < (uint64)end)  // must be trampoline
+  uint64 end_bound = PGROUNDUP((uint64)end);
+  if (pa < end_bound || is_kfree_init)  // must be trampoline
     return;
-  
+
   if (pa % PGSIZE != 0)
     panic("set_ref_count(): pa must be aligned");
   
-  uint64 end_bound = PGROUNDUP((uint64)end);
-
   if (is_incre)
   {
-    ref_count[pa - end_bound] += 1;
+    ref_count[(pa - end_bound) >> 12] += 1;
   }
   else
   {
-    ref_count[pa - end_bound] -= 1;
-    if (ref_count[pa - end_bound] < 0)
-      panic("ref_count has negative element");
+    if (ref_count[(pa - end_bound) >> 12] == 0)
+      panic("ref_count[pa - end_bound] has already been zero");
+    ref_count[(pa - end_bound) >> 12] -= 1;
   }
 }
 
 void clear_ref_count(uint64 pa)
 {
-  if (pa < (uint64)end)
+  uint64 end_bound = PGROUNDUP((uint64)end);
+  if (pa < end_bound)
     return;
 
   if (pa % PGSIZE != 0)
     panic("set_ref_count(): pa must be aligned");
 
-  uint64 end_bound = PGROUNDUP((uint64)end);
-
-  ref_count[pa - end_bound] = 0;
+  ref_count[(pa - end_bound) >> 12] = 0;
 }
 
 int get_ref_count(uint64 pa)
 {
-  if (pa < (uint64)end)
+  uint64 end_bound = PGROUNDUP((uint64)end);
+  if (pa < end_bound)
     panic("get_ref_count(): pa <(uint64)end");
 
   if (pa % PGSIZE != 0)
     panic("get_ref_count(): pa must be aligned");
 
-  uint64 end_bound = PGROUNDUP((uint64)end);
-
-  return ref_count[pa - end_bound];
+  return ref_count[(pa - end_bound) >> 12];
 }

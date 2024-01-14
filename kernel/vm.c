@@ -192,13 +192,10 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
       panic("uvmunmap: not a leaf");
     if(do_free){
       uint64 pa = PTE2PA(*pte);
-      if (get_ref_count(pa) == 1)
-      {
-        clear_ref_count(pa);
-        kfree((void*)pa);
-      }
+      kfree((void*)pa);
+    } else {
+      set_ref_count((uint64)PTE2PA(*pte), 0);
     }
-    set_ref_count((uint64)PTE2PA(*pte), 0);
     *pte = 0;
   }
 }
@@ -292,7 +289,6 @@ freewalk(pagetable_t pagetable)
       freewalk((pagetable_t)child);
       pagetable[i] = 0;
     } else if(pte & PTE_V){
-      // vmprint(pagetable);
       panic("freewalk: leaf");
     }
   }

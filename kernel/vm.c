@@ -163,7 +163,6 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
     if(*pte & PTE_V)
       panic("mappages: remap");
     *pte = PA2PTE(pa) | perm | PTE_V;
-    // set_ref_count(pa, 1);
     if(a == last)
       break;
     a += PGSIZE;
@@ -195,8 +194,6 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
     uint64 pa = PTE2PA(*pte);
     if(do_free) {
       kfree((void*)pa);
-    } else {
-      // set_ref_count(pa, 0);
     }
     *pte = 0;
   }

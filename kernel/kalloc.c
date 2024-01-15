@@ -75,9 +75,8 @@ kfree(void *pa)
   if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
     panic("kfree");
 
-  acquire(&kmem.lock);
   set_ref_count((uint64)pa, 0);
-  release(&kmem.lock);
+
   if (get_ref_count((uint64)pa) == 0)
   {
     // Fill with junk to catch dangling refs.
@@ -104,9 +103,8 @@ kalloc(void)
   r = kmem.freelist;
   if(r)
     kmem.freelist = r->next;
-
-  set_ref_count((uint64)r, 1);
   release(&kmem.lock);
+  set_ref_count((uint64)r, 1);
 
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
@@ -143,16 +141,22 @@ void set_ref_count(uint64 pa, int is_incre)
   if (is_incre)
   {
     if (((pa - end_bound) >> 12) < 0x8000)
+    {
+      acquire(&kmem.lock);
       ref_count[((pa - end_bound) >> 12)] += 1;
+      release(&kmem.lock);
+    }
     else
       panic("ref_count[pa - end_bound] index out of boundary");
   }
   else
   {
+    acquire(&kmem.lock);
     if (ref_count[((pa - end_bound) >> 12)] == 0)
       panic("ref_count[pa - end_bound] has already been zero");
     else
       ref_count[((pa - end_bound) >> 12)] -= 1;
+    release(&kmem.lock);
   }
 }
 
@@ -165,7 +169,9 @@ void clear_ref_count(uint64 pa)
   if (pa % PGSIZE != 0)
     panic("set_ref_count(): pa must be aligned");
 
+  acquire(&kmem.lock);
   ref_count[((pa - end_bound) >> 12)] = 0;
+  release(&kmem.lock);
 }
 
 uint8 get_ref_count(uint64 pa)

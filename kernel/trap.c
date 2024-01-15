@@ -83,6 +83,10 @@ usertrap(void)
       flags &= ~PTE_COW;
       memmove(mem, (char*)pa, PGSIZE);
       uvmunmap(p->pagetable, PGROUNDDOWN(stval), 1, 0);
+      set_ref_count(pa, 0);
+
+      if (get_ref_count(pa) == 0)
+        kfree_init((void*)pa);
 
       if (mappages(p->pagetable, PGROUNDDOWN(stval), PGSIZE, (uint64)mem, flags) != 0)
         exit(-1);

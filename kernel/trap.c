@@ -65,10 +65,8 @@ usertrap(void)
     intr_on();
 
     syscall();
-  } else if (r_scause() == 15) {  // store page fault
+  } else if (r_scause() == 15 && r_stval() < MAXVA) {  // store page fault
     char *mem;
-    if((mem = kalloc()) == 0)
-      exit(-1);
 
     uint64 stval = r_stval(), pa; // stval stores the faulting virtual address.
     uint flags;
@@ -81,6 +79,9 @@ usertrap(void)
     {
       flags |= PTE_W;
       flags &= ~PTE_COW;
+
+      if((mem = kalloc()) == 0)
+        exit(-1);
       memmove(mem, (char*)pa, PGSIZE);
       uvmunmap(p->pagetable, PGROUNDDOWN(stval), 1, 0);
       set_ref_count(pa, 0);

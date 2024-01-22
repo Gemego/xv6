@@ -65,7 +65,9 @@ usertrap(void)
     intr_on();
 
     syscall();
-  } else if (r_scause() == 15 && r_stval() < MAXVA) {  // store page fault
+  } 
+    #ifdef LAB_COW
+    else if (r_scause() == 15 && r_stval() < MAXVA) {  // store page fault
     char *mem;
 
     uint64 stval = r_stval(), pa; // stval stores the faulting virtual address.
@@ -98,7 +100,9 @@ usertrap(void)
       printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
       setkilled(p);
     }
-  } else if((which_dev = devintr()) != 0){
+  } 
+    #endif
+    else if((which_dev = devintr()) != 0){
     // ok
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);

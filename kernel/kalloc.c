@@ -18,7 +18,9 @@ struct run {
   struct run *next;
 };
 
+#ifdef LAB_COW
 uint8 ref_count[0x8000] = {0};
+#endif
 
 struct {
   struct spinlock lock;
@@ -75,10 +77,12 @@ kfree(void *pa)
   if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
     panic("kfree");
 
+  #ifdef LAB_COW
   set_ref_count((uint64)pa, 0);
 
   if (get_ref_count((uint64)pa) == 0)
   {
+  #endif
     // Fill with junk to catch dangling refs.
     memset(pa, 1, PGSIZE);
 
@@ -88,7 +92,9 @@ kfree(void *pa)
     r->next = kmem.freelist;
     kmem.freelist = r;
     release(&kmem.lock);
+  #ifdef LAB_COW
   }
+  #endif
 }
 
 // Allocate one 4096-byte page of physical memory.
@@ -104,7 +110,10 @@ kalloc(void)
   if(r)
     kmem.freelist = r->next;
   release(&kmem.lock);
+
+  #ifdef LAB_COW
   set_ref_count((uint64)r, 1);
+  #endif
 
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
@@ -129,6 +138,7 @@ uint64 kcount(void)
   return free_mem;
 }
 
+#ifdef LAB_COW
 void set_ref_count(uint64 pa, int is_incre)
 {
   uint64 end_bound = PGROUNDUP((uint64)end);
@@ -185,3 +195,4 @@ uint8 get_ref_count(uint64 pa)
 
   return ref_count[((uint64)pa - end_bound) >> 12];
 }
+#endif

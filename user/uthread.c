@@ -32,7 +32,6 @@ struct context {
 struct thread {
   char       stack[STACK_SIZE]; /* the thread's stack */
   int        state;             /* FREE, RUNNING, RUNNABLE */
-  void*      func;
   struct context* ctx;
 };
 struct thread all_thread[MAX_THREAD];
@@ -48,6 +47,7 @@ thread_init(void)
   current_thread = &all_thread[0];
   current_thread->state = RUNNING;
   current_thread->ctx = (struct context*)malloc(sizeof(struct context));
+  current_thread->ctx->sp = (uint64)current_thread->stack;
 }
 
 void
@@ -81,13 +81,12 @@ thread_schedule(void)
      * Invoke thread_switch to switch from t to next_thread:
      * thread_switch(??, ??);
      */
-    printf("t->ctx: %p\ncurrent_thread->ctx: %p\n", (uint64)t->ctx, (uint64)current_thread->ctx);
     thread_switch((uint64)t->ctx, (uint64)current_thread->ctx);
   } else
     next_thread = 0;
 }
 
-void 
+void
 thread_create(void (*func)())
 {
   struct thread *t;
@@ -97,10 +96,10 @@ thread_create(void (*func)())
   }
   t->state = RUNNABLE;
   // YOUR CODE HERE
-  t->func = func;
   if (t->ctx == 0)
     t->ctx = (struct context*)malloc(sizeof(struct context));
-  
+  t->ctx->ra = (uint64)func;
+  t->ctx->sp = (uint64)t->stack;
 }
 
 void 

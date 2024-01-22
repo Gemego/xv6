@@ -32,7 +32,7 @@ struct context {
 struct thread {
   char       stack[STACK_SIZE]; /* the thread's stack */
   int        state;             /* FREE, RUNNING, RUNNABLE */
-  struct context* ctx;
+  struct context ctx;
 };
 struct thread all_thread[MAX_THREAD];
 struct thread *current_thread;
@@ -46,8 +46,6 @@ thread_init(void)
   // save thread 0's state.
   current_thread = &all_thread[0];
   current_thread->state = RUNNING;
-  current_thread->ctx = (struct context*)malloc(sizeof(struct context));
-  current_thread->ctx->sp = (uint64)current_thread->stack;
 }
 
 void
@@ -58,6 +56,7 @@ thread_schedule(void)
   /* Find another runnable thread. */
   next_thread = 0;
   t = current_thread + 1;
+
   for(int i = 0; i < MAX_THREAD; i++){
     if(t >= all_thread + MAX_THREAD)
       t = all_thread;
@@ -69,7 +68,6 @@ thread_schedule(void)
   }
 
   if (next_thread == 0) {
-    printf("thread_schedule: no runnable threads\n");
     exit(-1);
   }
 
@@ -81,7 +79,7 @@ thread_schedule(void)
      * Invoke thread_switch to switch from t to next_thread:
      * thread_switch(??, ??);
      */
-    thread_switch((uint64)t->ctx, (uint64)current_thread->ctx);
+    thread_switch((uint64)&(t->ctx), (uint64)&(current_thread->ctx));
   } else
     next_thread = 0;
 }
@@ -96,10 +94,8 @@ thread_create(void (*func)())
   }
   t->state = RUNNABLE;
   // YOUR CODE HERE
-  if (t->ctx == 0)
-    t->ctx = (struct context*)malloc(sizeof(struct context));
-  t->ctx->ra = (uint64)func;
-  t->ctx->sp = (uint64)t->stack;
+  t->ctx.ra = (uint64)func;
+  t->ctx.sp = (uint64)(t->stack + STACK_SIZE);
 }
 
 void 

@@ -68,6 +68,7 @@ thread_schedule(void)
   }
 
   if (next_thread == 0) {
+    printf("thread_schedule: no runnable threads\n");
     exit(-1);
   }
 

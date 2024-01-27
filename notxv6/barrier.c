@@ -32,10 +32,8 @@ barrier()
   //
   pthread_mutex_lock(&bstate.barrier_mutex);
   bstate.nthread += 1;
-  // bstate.round += 1;
   if (bstate.nthread != nthread)
   {
-    // bstate.round -= 1;
     pthread_cond_wait(&bstate.barrier_cond, &bstate.barrier_mutex);
   }
   else

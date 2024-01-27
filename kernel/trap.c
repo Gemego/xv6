@@ -65,13 +65,52 @@ usertrap(void)
     intr_on();
 
     syscall();
-  } else if((which_dev = devintr()) != 0){
+  } 
+    #ifdef LAB_COW
+    else if (r_scause() == 15 && r_stval() < MAXVA) {  // store page fault
+    char *mem;
+
+    uint64 stval = r_stval(), pa; // stval stores the faulting virtual address.
+    uint flags;
+    pte_t *pte_p;
+
+    pte_p = walk(p->pagetable, stval, 0);
+    pa = PTE2PA(*pte_p);
+    flags = PTE_FLAGS(*pte_p);
+    if ((flags & PTE_COW) != 0)
+    {
+      flags |= PTE_W;
+      flags &= ~PTE_COW;
+
+      if((mem = kalloc()) == 0)
+        exit(-1);
+      memmove(mem, (char*)pa, PGSIZE);
+      uvmunmap(p->pagetable, PGROUNDDOWN(stval), 1, 0);
+      set_ref_count(pa, 0);
+
+      if (get_ref_count(pa) == 0)
+        kfree_init((void*)pa);
+
+      if (mappages(p->pagetable, PGROUNDDOWN(stval), PGSIZE, (uint64)mem, flags) != 0)
+        exit(-1);
+    }
+    else
+    {
+      printf("usertrap(): load page fault while not COW pid=%d\n", p->pid);
+      printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+      setkilled(p);
+    }
+  } 
+    #endif
+    else if((which_dev = devintr()) != 0){
     // ok
   } else {
 
     
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+    printf("            name=%s\n", p->name);
+    // vmprint(p->pagetable);
     setkilled(p);
   }
 
@@ -81,7 +120,23 @@ usertrap(void)
 
   // give up the CPU if this is a timer interrupt.
   if(which_dev == 2)
+  {
+    #ifdef LAB_TRAPS
+    if(p->interval > 0)
+    {
+      acquire(&p->lock);
+      p->pass_ticks += 1;
+      if ((p->pass_ticks % p->interval == 0) && (p->in_handler == 0))
+      {
+        *(p->user_trapframe) = *(p->trapframe);
+        p->trapframe->epc = p->handler;
+        p->in_handler = 1;
+      }
+      release(&p->lock);
+    }
+    #endif
     yield();
+  }
 
   usertrapret();
 }

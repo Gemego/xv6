@@ -109,11 +109,11 @@ e1000_transmit(struct mbuf *m)
     printf("e1000_transmit: tx_ring is overflowing!\n");
     return -1;
   }
-  else
-  {
-    mbuffree(tx_ring[tail].addr);
-  }
+  else if (tx_ring[tail].addr != 0)
+    mbuffree((struct mbuf*)tx_ring[tail].addr);
+
   
+
 
   return 0;
 }

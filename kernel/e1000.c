@@ -103,8 +103,15 @@ e1000_transmit(struct mbuf *m)
   // a pointer so that it can be freed after sending.
   //
   
-  // printf("call e1000_transmit\n");
+  uint32 tail = regs[E1000_TDT];
+  if (tx_ring[tail].status != E1000_TXD_STAT_DD)
+  {
+    printf("e1000_transmit: tx_ring is overflowing!\n");
+    return -1;
+  }
+
   
+
   return 0;
 }
 

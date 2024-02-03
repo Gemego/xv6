@@ -111,7 +111,7 @@ e1000_transmit(struct mbuf *m)
   }
   else
   {
-    mbuffree(tx_mbufs[tail]);
+    mbuffree(tx_ring[tail].addr);
   }
   
 

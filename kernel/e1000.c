@@ -103,6 +103,8 @@ e1000_transmit(struct mbuf *m)
   // a pointer so that it can be freed after sending.
   //
   
+  // printf("call e1000_transmit\n");
+  
   return 0;
 }
 

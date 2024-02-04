@@ -117,7 +117,6 @@ e1000_transmit(struct mbuf *m)
   tx_ring[tail].cmd = E1000_TXD_CMD_RS | E1000_TXD_CMD_EOP;
 
   regs[E1000_TDT] = (tail + 1) % TX_RING_SIZE;
-
   return 0;
 }
 
@@ -131,10 +130,13 @@ e1000_recv(void)
   // Create and deliver an mbuf for each packet (using net_rx()).
   //
 
-  uint32 tail = (regs[E1000_RDT]+ 1) % RX_RING_SIZE;
+  uint32 tail = (regs[E1000_RDT] + 1) % RX_RING_SIZE;
   
   if ((rx_ring[tail].status & E1000_RXD_STAT_DD) == 0)
+  {
     printf("e1000_recv: rx_ring is overflowing!\n");
+    return;
+  }
 
   rx_mbufs[tail]->len = rx_ring[tail].length;
   net_rx(rx_mbufs[tail]);
@@ -153,7 +155,11 @@ e1000_intr(void)
   // tell the e1000 we've seen this interrupt;
   // without this the e1000 won't raise any
   // further interrupts.
+  // intr_off();
+  acquire(&e1000_lock);
   regs[E1000_ICR] = 0xffffffff;
 
   e1000_recv();
+  release(&e1000_lock);
+  // intr_on();
 }

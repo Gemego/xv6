@@ -278,11 +278,13 @@ main(int argc, char *argv[])
     int pid = fork();
     if (pid == 0){
       ping(2000 + i + 1, dport, 1);
+      printf("fork: %d\n", i);
       exit(0);
     }
   }
   for (i = 0; i < 10; i++){
     wait(&ret);
+    printf("wait: %d\n", i);
     if (ret != 0)
       exit(1);
   }

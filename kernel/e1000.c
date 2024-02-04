@@ -110,11 +110,11 @@ e1000_transmit(struct mbuf *m)
     return -1;
   }
   else if (tx_ring[tail].addr != 0)
-    mbuffree((struct mbuf*)tx_ring[tail].addr);
+    mbuffree((struct mbuf*)PGROUNDDOWN(tx_ring[tail].addr));
 
-  tx_ring[tail].addr = (uint64)m;
+  tx_ring[tail].addr = (uint64)m->buf;
   tx_ring[tail].length = (uint16)m->len;
-  tx_ring[tail].css = (uint8)m->head;
+  tx_ring[tail].css = (uint8)(m->head - m->buf);
   tx_ring[tail].cmd = E1000_TXD_CMD_RS;
 
   regs[E1000_TDT] = (tail + 1) % TX_RING_SIZE;

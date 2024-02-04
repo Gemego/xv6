@@ -133,7 +133,6 @@ e1000_recv(void)
   //
 
   uint32 tail = regs[E1000_RDT];
-  regs[E1000_RDT] = (tail + 1) % TX_RING_SIZE;
   
   if ((rx_ring[tail].status & E1000_RXD_STAT_DD) == 0)
   {
@@ -143,6 +142,13 @@ e1000_recv(void)
 
   rx_mbufs[tail]->len = rx_ring[tail].length;
   net_rx(rx_mbufs[tail]);
+  rx_mbufs[tail] = mbufalloc(0);
+  rx_ring[tail].addr = rx_mbufs[tail]->head;
+  rx_ring[tail].status = 0;
+
+  regs[E1000_RDT] = (tail + 1) % TX_RING_SIZE;
+
+  
 }
 
 void

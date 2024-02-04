@@ -115,7 +115,7 @@ e1000_transmit(struct mbuf *m)
   tx_ring[tail].addr = (uint64)m->buf;
   tx_ring[tail].length = (uint16)m->len;
   tx_ring[tail].css = (uint8)(m->head - m->buf);
-  tx_ring[tail].cmd = E1000_TXD_CMD_RS;
+  tx_ring[tail].cmd = E1000_TXD_CMD_RS | E1000_TXD_CMD_EOP;
 
   regs[E1000_TDT] = (tail + 1) % TX_RING_SIZE;
 
@@ -133,6 +133,16 @@ e1000_recv(void)
   //
 
   uint32 tail = regs[E1000_RDT];
+  regs[E1000_RDT] = (tail + 1) % TX_RING_SIZE;
+  
+  if ((rx_ring[tail].status & E1000_RXD_STAT_DD) == 0)
+  {
+    printf("e1000_recv: rx_ring is overflowing!\n");
+    return -1;
+  }
+
+  rx_mbufs[tail]->len = rx_ring[tail].length;
+  net_rx(rx_mbufs[tail]);
 }
 
 void

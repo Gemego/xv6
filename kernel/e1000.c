@@ -112,9 +112,8 @@ e1000_transmit(struct mbuf *m)
   else if (tx_ring[tail].addr != 0)
     mbuffree((struct mbuf*)PGROUNDDOWN(tx_ring[tail].addr));
 
-  tx_ring[tail].addr = (uint64)m->buf;
+  tx_ring[tail].addr = (uint64)m->head;
   tx_ring[tail].length = (uint16)m->len;
-  tx_ring[tail].css = (uint8)(m->head - m->buf);
   tx_ring[tail].cmd = E1000_TXD_CMD_RS | E1000_TXD_CMD_EOP;
 
   regs[E1000_TDT] = (tail + 1) % TX_RING_SIZE;
@@ -132,23 +131,20 @@ e1000_recv(void)
   // Create and deliver an mbuf for each packet (using net_rx()).
   //
 
-  uint32 tail = regs[E1000_RDT];
+  uint32 tail = (regs[E1000_RDT]+ 1) % RX_RING_SIZE;
   
   if ((rx_ring[tail].status & E1000_RXD_STAT_DD) == 0)
-  {
     printf("e1000_recv: rx_ring is overflowing!\n");
-    return -1;
-  }
 
   rx_mbufs[tail]->len = rx_ring[tail].length;
   net_rx(rx_mbufs[tail]);
   rx_mbufs[tail] = mbufalloc(0);
-  rx_ring[tail].addr = rx_mbufs[tail]->head;
+  if (!rx_mbufs[tail])
+    panic("e1000");
+  rx_ring[tail].addr = (uint64)rx_mbufs[tail]->head;
   rx_ring[tail].status = 0;
 
-  regs[E1000_RDT] = (tail + 1) % TX_RING_SIZE;
-
-  
+  regs[E1000_RDT] = tail;
 }
 
 void

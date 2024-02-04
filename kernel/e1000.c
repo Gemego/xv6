@@ -102,9 +102,9 @@ e1000_transmit(struct mbuf *m)
   // the TX descriptor ring so that the e1000 sends it. Stash
   // a pointer so that it can be freed after sending.
   //
-  
+
   uint32 tail = regs[E1000_TDT];
-  if (tx_ring[tail].status != E1000_TXD_STAT_DD)
+  if ((tx_ring[tail].status & E1000_TXD_STAT_DD) == 0)
   {
     printf("e1000_transmit: tx_ring is overflowing!\n");
     return -1;
@@ -112,8 +112,12 @@ e1000_transmit(struct mbuf *m)
   else if (tx_ring[tail].addr != 0)
     mbuffree((struct mbuf*)tx_ring[tail].addr);
 
-  
+  tx_ring[tail].addr = (uint64)m;
+  tx_ring[tail].length = (uint16)m->len;
+  tx_ring[tail].css = (uint8)m->head;
+  tx_ring[tail].cmd = E1000_TXD_CMD_RS;
 
+  regs[E1000_TDT] = (tail + 1) % TX_RING_SIZE;
 
   return 0;
 }

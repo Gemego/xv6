@@ -155,11 +155,9 @@ e1000_intr(void)
   // tell the e1000 we've seen this interrupt;
   // without this the e1000 won't raise any
   // further interrupts.
-  // intr_off();
   acquire(&e1000_lock);
   regs[E1000_ICR] = 0xffffffff;
 
   e1000_recv();
   release(&e1000_lock);
-  // intr_on();
 }

@@ -131,6 +131,8 @@ e1000_recv(void)
   // Check for packets that have arrived from the e1000
   // Create and deliver an mbuf for each packet (using net_rx()).
   //
+
+  uint32 tail = regs[E1000_RDT];
 }
 
 void

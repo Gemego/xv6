@@ -3,6 +3,7 @@ typedef unsigned long size_t;
 typedef long int off_t;
 #endif
 struct stat;
+struct sysinfo;
 
 // system calls
 int fork(void);
@@ -26,6 +27,8 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int trace(int);
+int sysinfo(struct sysinfo *);
 #ifdef LAB_NET
 int connect(uint32, uint16, uint16);
 #endif
@@ -33,6 +36,10 @@ int connect(uint32, uint16, uint16);
 int pgaccess(void *base, int len, void *mask);
 // usyscall region
 int ugetpid(void);
+#endif
+#ifdef LAB_TRAPS
+int sigalarm(int ticks, void (*handler)());
+int sigreturn(void);
 #endif
 
 // ulib.c

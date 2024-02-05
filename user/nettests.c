@@ -25,7 +25,6 @@ ping(uint16 sport, uint16 dport, int attempts)
     fprintf(2, "ping: connect() failed\n");
     exit(1);
   }
-
   for(int i = 0; i < attempts; i++) {
     if(write(fd, obuf, strlen(obuf)) < 0){
       fprintf(2, "ping: send() failed\n");
@@ -278,13 +277,11 @@ main(int argc, char *argv[])
     int pid = fork();
     if (pid == 0){
       ping(2000 + i + 1, dport, 1);
-      printf("fork: %d\n", i);
       exit(0);
     }
   }
   for (i = 0; i < 10; i++){
     wait(&ret);
-    printf("wait: %d\n", i);
     if (ret != 0)
       exit(1);
   }

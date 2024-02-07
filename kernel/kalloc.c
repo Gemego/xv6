@@ -28,6 +28,7 @@ struct {
   struct run *freelist;
   #else
   struct run *freelist[NCPU];
+  struct spinlock frls_lk[NCPU];
   #endif
 } kmem;
 
@@ -35,6 +36,15 @@ void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
+  #ifdef LAB_LOCK
+  for (int i = 0; i < NCPU; i++)
+  {
+    char lk_name[32] = {0};
+    snprintf(lk_name, 32, "kmem_frls_lk%d", i);
+    initlock(&kmem.frls_lk[i], lk_name);
+  }
+  #endif
+
   freerange(end, (void*)PHYSTOP);
 }
 
@@ -68,8 +78,14 @@ kfree_init(void *pa)
   r = (struct run*)pa;
 
   acquire(&kmem.lock);
+  #ifndef LAB_LOCK
   r->next = kmem.freelist;
   kmem.freelist = r;
+  #else
+  r->next = kmem.freelist[cpuid()];
+  kmem.freelist = r;
+  #endif
+
   release(&kmem.lock);
 }
 

@@ -22,26 +22,33 @@ struct run {
 uint8 ref_count[0x8000] = {0};
 #endif
 
+#ifdef LAB_LOCK
+char lk_name[32 * NCPU] = {0};
+uint free_mem_cnt[NCPU] = {0};
+#endif
+
 struct {
-  struct spinlock lock;
   #ifndef LAB_LOCK
+  struct spinlock lock;
   struct run *freelist;
   #else
-  struct run *freelist[NCPU];
   struct spinlock frls_lk[NCPU];
+  struct run *freelist[NCPU];
   #endif
 } kmem;
 
 void
 kinit()
 {
+  #ifndef LAB_LOCK
   initlock(&kmem.lock, "kmem");
-  #ifdef LAB_LOCK
+  #else
   for (int i = 0; i < NCPU; i++)
   {
-    char lk_name[32] = {0};
-    snprintf(lk_name, 32, "kmem_frls_lk%d", i);
-    initlock(&kmem.frls_lk[i], lk_name);
+    kmem.freelist[i] = 0;
+
+    snprintf(lk_name + i * 32, 32, "kmem_frls_lk%d", i);
+    initlock(&kmem.frls_lk[i], lk_name + i * 32);
   }
   #endif
 
@@ -77,16 +84,20 @@ kfree_init(void *pa)
 
   r = (struct run*)pa;
 
-  acquire(&kmem.lock);
   #ifndef LAB_LOCK
+  acquire(&kmem.lock);
   r->next = kmem.freelist;
   kmem.freelist = r;
-  #else
-  r->next = kmem.freelist[cpuid()];
-  kmem.freelist = r;
-  #endif
-
   release(&kmem.lock);
+  #else
+  push_off();
+  acquire(&kmem.frls_lk[cpuid()]);
+  r->next = kmem.freelist[cpuid()];
+  kmem.freelist[cpuid()] = r;
+  free_mem_cnt[cpuid()] += 1;
+  release(&kmem.frls_lk[cpuid()]);
+  pop_off();
+  #endif
 }
 
 void
@@ -108,10 +119,19 @@ kfree(void *pa)
 
     r = (struct run*)pa;
 
+    #ifndef LAB_LOCK
     acquire(&kmem.lock);
     r->next = kmem.freelist;
     kmem.freelist = r;
     release(&kmem.lock);
+    #else
+    push_off();
+    acquire(&kmem.frls_lk[cpuid()]);
+    r->next = kmem.freelist[cpuid()];
+    kmem.freelist[cpuid()] = r;
+    release(&kmem.frls_lk[cpuid()]);
+    pop_off();
+    #endif
   #ifdef LAB_COW
   }
   #endif
@@ -125,18 +145,53 @@ kalloc(void)
 {
   struct run *r;
 
+  #ifndef LAB_LOCK
   acquire(&kmem.lock);
   r = kmem.freelist;
   if(r)
     kmem.freelist = r->next;
   release(&kmem.lock);
 
+  if(r)
+    memset((char*)r, 5, PGSIZE); // fill with junk
+  #else
+  push_off();
+  acquire(&kmem.frls_lk[cpuid()]);
+  r = kmem.freelist[cpuid()];
+  if(r)
+  {
+    kmem.freelist[cpuid()] = r->next;
+    release(&kmem.frls_lk[cpuid()]);
+  }
+  else
+  {
+    for (int j = 0; j < NCPU; j++)
+    {
+      if (!kmem.frls_lk[j].locked)
+        acquire(&kmem.frls_lk[j]);
+      else if (kmem.frls_lk[j].locked || j == cpuid())
+        continue;
+
+      r = kmem.freelist[j];
+      if(r)
+      {
+        kmem.freelist[j] = r->next;
+        release(&kmem.frls_lk[j]);
+        break;
+      }
+
+      release(&kmem.frls_lk[j]);
+    }
+    release(&kmem.frls_lk[cpuid()]);
+  }
+  pop_off();
+  if(r)
+    memset((char*)r, 5, PGSIZE); // fill with junk
+  #endif
+
   #ifdef LAB_COW
   set_ref_count((uint64)r, 1);
   #endif
-
-  if(r)
-    memset((char*)r, 5, PGSIZE); // fill with junk
 
   return (void*)r;
 }
@@ -146,6 +201,7 @@ uint64 kcount(void)
   struct run *r = 0;
   uint64 free_mem = 0;
 
+  #ifndef LAB_LOCK
   acquire(&kmem.lock);
   r = kmem.freelist;
   while(r)
@@ -154,6 +210,18 @@ uint64 kcount(void)
     free_mem += PGSIZE;
   }
   release(&kmem.lock);
+  #else
+  push_off();
+  acquire(&kmem.frls_lk[cpuid()]);
+  pop_off();
+  r = kmem.freelist[cpuid()];
+  while(r)
+  {
+    r = r->next;
+    free_mem += PGSIZE;
+  }
+  release(&kmem.frls_lk[cpuid()]);
+  #endif
 
   return free_mem;
 }

@@ -23,8 +23,22 @@
 #include "fs.h"
 #include "buf.h"
 
+#ifdef LAB_LOCK
+#define HASH_LEN 13
+struct hash_bucket
+{
+  struct buf *next_buf;
+  struct spinlock bkt_lk;
+};
+char lk_name[32 * HASH_LEN] = {0};
+#endif
+
 struct {
   struct spinlock lock;
+#ifdef LAB_LOCK
+  struct hash_bucket bhash[HASH_LEN];
+#endif
+
   struct buf buf[NBUF];
 
   // Linked list of all buffers, through prev/next.
@@ -50,6 +64,14 @@ binit(void)
     bcache.head.next->prev = b;
     bcache.head.next = b;
   }
+  #ifdef LAB_LOCK
+  for (int i = 0; i < HASH_LEN; i++)
+  {
+    bcache.hash_bucket[i].next_buf = 0;
+    snprintf(lk_name + i * 32, 32, "bcache_bhash_lk%d", i);
+    initlock(&bcache.hash_bucket[i].bkt_lk, lk_name + i * 32);
+  }
+  #endif
 }
 
 // Look through buffer cache for block on device dev.

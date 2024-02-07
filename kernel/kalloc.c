@@ -24,7 +24,11 @@ uint8 ref_count[0x8000] = {0};
 
 struct {
   struct spinlock lock;
+  #ifndef LAB_LOCK
   struct run *freelist;
+  #else
+  struct run *freelist[NCPU];
+  #endif
 } kmem;
 
 void

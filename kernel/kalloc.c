@@ -167,9 +167,11 @@ kalloc(void)
   if(r)
   {
     kmem.freelist[cpuid()] = r->next;
+    release(&kmem.frls_lk[cpuid()]);
   }
   else
   {
+    release(&kmem.frls_lk[cpuid()]);
     for (int j = 0; j < NCPU; j++)
     {
       if (j == cpuid())
@@ -183,8 +185,10 @@ kalloc(void)
         {
           kmem.freelist[j] = r->next;
           tmp = r->next;
+          acquire(&kmem.frls_lk[cpuid()]);
           r->next = kmem.freelist[cpuid()];
           kmem.freelist[cpuid()] = r;
+          release(&kmem.frls_lk[cpuid()]);
           r = tmp;
           mem_wanted -= 1;
         }
@@ -199,7 +203,7 @@ kalloc(void)
       kmem.freelist[cpuid()] = r->next;
   }
 
-  release(&kmem.frls_lk[cpuid()]);
+  // release(&kmem.frls_lk[cpuid()]);
 
   pop_off();
   if(r)

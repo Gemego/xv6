@@ -2162,6 +2162,7 @@ MAXVAplus(char *s)
     wait(&xstatus);
     if(xstatus != -1)  // did kernel kill child?
       exit(1);
+    a = 0;
   }
 }
 

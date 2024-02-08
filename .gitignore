@@ -25,3 +25,7 @@ barrier
 .DS_Store
 *.dSYM
 *.pcap
+notxv6/
+
+.vscode
+.editorconfig

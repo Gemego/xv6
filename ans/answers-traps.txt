@@ -1,0 +1,5 @@
+a0-a7, a2 holds 13 in main's call to printf.
+no, the compiler has already cal the return value of func f and g.
+0x672
+0x38 is in ra
+it is Hello World

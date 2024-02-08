@@ -55,6 +55,17 @@ procinit(void)
       initlock(&p->lock, "proc");
       p->state = UNUSED;
       p->kstack = KSTACK((int) (p - proc));
+      p->mask = 0;
+      #ifdef LAB_PGTBL
+      p->usyscall = 0;
+      #endif
+      #ifdef LAB_TRAPS
+      p->interval = 0;
+      p->handler = 0;
+      p->pass_ticks = 0;
+      p->in_handler = 0;
+      p->user_trapframe = 0;
+      #endif
   }
 }
 
@@ -132,6 +143,27 @@ found:
     return 0;
   }
 
+  #ifdef LAB_TRAPS
+  if((p->user_trapframe = (struct trapframe *)kalloc()) == 0){
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
+  #endif
+
+  // Allocate a read-only page for pid
+  #ifdef LAB_PGTBL
+  if((p->usyscall = (struct usyscall *)kalloc()) == 0){
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
+  else
+  {
+    (p->usyscall)->pid = p->pid;
+  }
+  #endif
+
   // An empty user page table.
   p->pagetable = proc_pagetable(p);
   if(p->pagetable == 0){
@@ -168,7 +200,21 @@ freeproc(struct proc *p)
   p->chan = 0;
   p->killed = 0;
   p->xstate = 0;
+  p->mask = 0;
   p->state = UNUSED;
+  p->mask = 0;
+  #ifdef LAB_PGTBL
+  p->usyscall = 0;
+  #endif
+  #ifdef LAB_TRAPS
+  p->interval = 0;
+  p->handler = 0;
+  p->pass_ticks = 0;
+  p->in_handler = 0;
+  if (p->user_trapframe)
+    kfree((void*)p->user_trapframe);
+  p->user_trapframe = 0;
+  #endif
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -202,6 +248,15 @@ proc_pagetable(struct proc *p)
     return 0;
   }
 
+  #ifdef LAB_PGTBL
+  if(mappages(pagetable, USYSCALL, PGSIZE,
+              (uint64)(p->usyscall), PTE_R | PTE_U) < 0){
+    uvmunmap(pagetable, USYSCALL, 1, 0);
+    uvmfree(pagetable, 0);
+    return 0;
+  }
+  #endif
+
   return pagetable;
 }
 
@@ -212,6 +267,9 @@ proc_freepagetable(pagetable_t pagetable, uint64 sz)
 {
   uvmunmap(pagetable, TRAMPOLINE, 1, 0);
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
+  #ifdef LAB_PGTBL
+  uvmunmap(pagetable, USYSCALL, 1, 0);
+  #endif
   uvmfree(pagetable, sz);
 }
 
@@ -321,6 +379,8 @@ fork(void)
   acquire(&np->lock);
   np->state = RUNNABLE;
   release(&np->lock);
+
+  np->mask = p->mask; // copy mask of parent
 
   return pid;
 }
@@ -685,4 +745,21 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+int proccount(void)
+{
+  int proc_num = 0;
+
+  struct proc *pp = 0;
+
+  for(pp = proc; pp < &proc[NPROC]; pp++)
+  {
+    if(pp->state != UNUSED)
+    {
+      proc_num += 1;
+    }
+  }
+
+  return proc_num;
 }

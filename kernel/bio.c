@@ -155,6 +155,7 @@ bget(uint dev, uint blockno)
     }
   }
 
+  release(&bcache.bhash[hash_idx].bkt_lk);
   int i = (hash_idx + 1) % HASH_LEN;
   while (i != hash_idx)
   { 
@@ -171,13 +172,14 @@ bget(uint dev, uint blockno)
 
         b->next->prev = b->prev;
         b->prev->next = b->next;
+        acquire(&bcache.bhash[hash_idx].bkt_lk);
         b->next = bcache.bhash[hash_idx].head.next;
         b->prev = &bcache.bhash[hash_idx].head;
         bcache.bhash[hash_idx].head.next->prev = b;
         bcache.bhash[hash_idx].head.next = b;
+        release(&bcache.bhash[hash_idx].bkt_lk);
 
         release(&bcache.bhash[i].bkt_lk);
-        release(&bcache.bhash[hash_idx].bkt_lk);
         acquiresleep(&b->lock);
         return b;
       }

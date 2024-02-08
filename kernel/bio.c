@@ -109,7 +109,7 @@ bget(uint dev, uint blockno)
     }
   }
   #else
-  acquire(&bcache.lock);
+  // acquire(&bcache.lock);
   uint hash_idx = blockno % HASH_LEN;
   acquire(&bcache.bhash[hash_idx].bkt_lk);
   b = bcache.bhash[hash_idx].head.next;
@@ -152,7 +152,7 @@ bget(uint dev, uint blockno)
       b->refcnt = 1;
       release(&bcache.bhash[hash_idx].bkt_lk);
       acquiresleep(&b->lock);
-      release(&bcache.lock);
+      // release(&bcache.lock);
       return b;
     }
   }
@@ -179,8 +179,9 @@ bget(uint dev, uint blockno)
         bcache.bhash[hash_idx].head.next = b;
 
         release(&bcache.bhash[i].bkt_lk);
+        release(&bcache.bhash[hash_idx].bkt_lk);
         acquiresleep(&b->lock);
-        release(&bcache.lock);
+        // release(&bcache.lock);
         return b;
       }
     }
@@ -239,7 +240,7 @@ brelse(struct buf *b)
   
   release(&bcache.lock);
   #else
-  acquire(&bcache.lock);
+  // acquire(&bcache.lock);
   uint hash_idx = b->blockno % HASH_LEN;
   acquire(&bcache.bhash[hash_idx].bkt_lk);
   b->refcnt--;
@@ -254,13 +255,13 @@ brelse(struct buf *b)
     bcache.bhash[hash_idx].head.next = b;
   }
   release(&bcache.bhash[hash_idx].bkt_lk);
-  release(&bcache.lock);
+  // release(&bcache.lock);
   #endif
 }
 
 void
 bpin(struct buf *b) {
-  acquire(&bcache.lock);
+  // acquire(&bcache.lock);
   #ifdef LAB_LOCK
   uint hash_idx = b->blockno % HASH_LEN;
   acquire(&bcache.bhash[hash_idx].bkt_lk);
@@ -269,12 +270,12 @@ bpin(struct buf *b) {
   #ifdef LAB_LOCK
   release(&bcache.bhash[hash_idx].bkt_lk);
   #endif
-  release(&bcache.lock);
+  // release(&bcache.lock);
 }
 
 void
 bunpin(struct buf *b) {
-  acquire(&bcache.lock);
+  // acquire(&bcache.lock);
   #ifdef LAB_LOCK
   uint hash_idx = b->blockno % HASH_LEN;
   acquire(&bcache.bhash[hash_idx].bkt_lk);
@@ -283,5 +284,5 @@ bunpin(struct buf *b) {
   #ifdef LAB_LOCK
   release(&bcache.bhash[hash_idx].bkt_lk);
   #endif
-  release(&bcache.lock);
+  // release(&bcache.lock);
 }

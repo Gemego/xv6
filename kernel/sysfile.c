@@ -504,7 +504,6 @@ sys_pipe(void)
   return 0;
 }
 
-
 #ifdef LAB_NET
 int
 sys_connect(void)
@@ -527,5 +526,13 @@ sys_connect(void)
   }
 
   return fd;
+}
+#endif
+
+#ifdef LAB_FS
+int sys_symlink(void)
+{
+  
+  return 0;
 }
 #endif

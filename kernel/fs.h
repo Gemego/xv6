@@ -24,7 +24,11 @@ struct superblock {
 
 #define FSMAGIC 0x10203040
 
+#ifndef LAB_FS
 #define NDIRECT 12
+#else
+#define NDIRECT 11
+#endif
 #define NINDIRECT (BSIZE / sizeof(uint))
 #define MAXFILE (NDIRECT + NINDIRECT)
 

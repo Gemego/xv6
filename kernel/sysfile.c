@@ -330,6 +330,10 @@ sys_open(void)
       end_op();
       return -1;
     }
+    if ((omode & 0x020) && ip->lock.locked)
+    {
+      printf("0x020 in sys_open!\npath = %s\n", path);
+    }
     ilock(ip);
     if(ip->type == T_DIR && omode != O_RDONLY){
       iunlockput(ip);
@@ -357,44 +361,52 @@ sys_open(void)
     f->major = ip->major;
   }
   #ifdef LAB_FS
-  else if (ip->type == T_SYMLINK && !(omode & O_NOFOLLOW))
+  else if (ip->type == T_SYMLINK)
   {
-    struct inode *tmp_ip;
-    struct buf *tmp_bp;
-    tmp_bp = bread(ip->dev, ip->inum);
-    uint *a = (uint*)tmp_bp->data;
-    int i = 0;
-    for (; i < 10; i++)  // Can't be too many recursive link, only 10 times link
+    printf("sys_open: here?\nomode = %d\n", omode);
+    if (!(omode & O_NOFOLLOW))
     {
-      if ((tmp_ip = namei((char *)a)) == 0)
+      struct inode *tmp_ip;
+      struct buf *tmp_bp;
+      tmp_bp = bread(ip->dev, ip->inum);
+      uint *a = (uint*)tmp_bp->data;
+      int i = 0;
+      for (; i < 10; i++)  // Can't be too many recursive link, only 10 times link
       {
-        iunlockput(ip);
-        end_op();
-        return -1;
+        if ((tmp_ip = namei((char *)a)) == 0)
+        {
+          iunlock(ip);
+          end_op();
+          return -1;
+        }
+
+        ilock(tmp_ip);
+        if (tmp_ip->type == T_SYMLINK)
+        {
+          tmp_bp = bread(tmp_ip->dev, tmp_ip->inum);
+          a = (uint*)tmp_bp->data;
+          iunlock(tmp_ip);
+          iunlock(ip);
+          ip = tmp_ip;
+        }
+        else
+        {
+          ip = tmp_ip;
+          break;
+        }
       }
-      ilock(tmp_ip);
-      if (tmp_ip->type == T_SYMLINK)
-      {
-        iunlockput(ip);
-        tmp_bp = bread(tmp_ip->dev, tmp_ip->inum);
-        a = (uint*)tmp_bp->data;
-        ip = tmp_ip;
-        iunlockput(tmp_ip);
-      }
-      else
+      if (i == 10 && ip->type == T_SYMLINK)
       {
         iunlock(tmp_ip);
         iunlock(ip);
-        break;
+        end_op();
+        return -1;
       }
+      ip = tmp_ip;
+      // printf("sys_open str: %s\n", (char *)a);
     }
-    if (i == 10 && ip->type == T_SYMLINK)
-    {
-      iunlock(tmp_ip);
-      iunlockput(ip);
-      end_op();
-      return -1;
-    }
+    f->type = FD_INODE;
+    f->off = 0;
   }
   #endif
   else {
@@ -403,11 +415,7 @@ sys_open(void)
   }
   f->ip = ip;
   f->readable = !(omode & O_WRONLY);
-  #ifndef LAB_FS
   f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
-  #else
-  f->writable = (omode & O_WRONLY) || (omode & O_RDWR) || (omode & O_NOFOLLOW);
-  #endif
 
   if((omode & O_TRUNC) && ip->type == T_FILE){
     itrunc(ip);
@@ -584,16 +592,24 @@ int sys_symlink(void)
   char new[MAXPATH], old[MAXPATH];
   struct inode *ip;
   struct buf *bp;
+  // int ip_newed = 0;
 
   if(argstr(0, old, MAXPATH) < 0 || argstr(1, new, MAXPATH) < 0)
     return -1;
 
   begin_op();
   ip = namei(new);
-  if(ip != 0 && ip->type != T_SYMLINK)
+  if(ip != 0) 
   {
-    end_op();
-    return -1;
+    ilock(ip);
+    if (ip->type != T_SYMLINK)
+    {
+      iunlock(ip);
+      end_op();
+      return -1;
+    }
+    // ip_newed += 1;
+    // iunlock(ip);
   }
   else if (ip == 0)
   {
@@ -604,14 +620,14 @@ int sys_symlink(void)
       return -1;
     }
   }
-  ilock(ip);
-
+  // printf("sys_symlink: here?\n");
   bp = bread(ip->dev, ip->inum);
-  safestrcpy((char *)bp->data, old, strlen(old));
+  safestrcpy((char *)bp->data, old, strlen(old) + 1);
   log_write(bp);
   brelse(bp);
 
-  iunlock(ip);
+  // if (!ip_newed)
+    iunlock(ip);
   end_op();
   return 0;
 }

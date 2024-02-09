@@ -87,8 +87,9 @@ testsymlink(void)
     fail("failed to read bytes from b");
 
   unlink("/testsymlink/a");
-  if(open("/testsymlink/b", O_RDWR) >= 0)
+  if(open("/testsymlink/b", O_RDWR | 0x020) >= 0)
     fail("Should not be able to open b after deleting a");
+  printf("symlinktest: here?\n");
 
   r = symlink("/testsymlink/b", "/testsymlink/a");
   if(r < 0)

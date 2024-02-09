@@ -41,6 +41,9 @@ int ugetpid(void);
 int sigalarm(int ticks, void (*handler)());
 int sigreturn(void);
 #endif
+#ifdef LAB_FS
+int symlink(const char *target, const char *path);
+#endif
 
 // ulib.c
 int stat(const char*, struct stat*);

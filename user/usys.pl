@@ -43,3 +43,4 @@ entry("pgaccess");
 entry("pgdirty");
 entry("sigalarm");
 entry("sigreturn");
+entry("symlink");

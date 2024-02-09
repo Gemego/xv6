@@ -16,6 +16,9 @@
 #include "file.h"
 #include "fcntl.h"
 
+#ifdef LAB_FS
+#include "buf.h"
+#endif
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
 static int
@@ -357,10 +360,11 @@ sys_open(void)
   else if (ip->type == T_SYMLINK && !(omode & O_NOFOLLOW))
   {
     struct inode *tmp_ip;
-    struct buf *tmp_bp = bread(ip->dev, ip->inum);
+    struct buf *tmp_bp;
+    tmp_bp = bread(ip->dev, ip->inum);
     uint *a = (uint*)tmp_bp->data;
-    int i;
-    for (i = 0; i < 10; i++)  // Can't be too many recursive link, only 10 times link
+    int i = 0;
+    for (; i < 10; i++)  // Can't be too many recursive link, only 10 times link
     {
       if ((tmp_ip = namei((char *)a)) == 0)
       {
@@ -368,21 +372,29 @@ sys_open(void)
         end_op();
         return -1;
       }
+      ilock(tmp_ip);
       if (tmp_ip->type == T_SYMLINK)
       {
-        tmp_bp = bread(tmp_ip->dev, ip->tmp_ip);
+        iunlockput(ip);
+        tmp_bp = bread(tmp_ip->dev, tmp_ip->inum);
         a = (uint*)tmp_bp->data;
         ip = tmp_ip;
+        iunlockput(tmp_ip);
       }
       else
+      {
+        iunlock(tmp_ip);
+        iunlock(ip);
         break;
+      }
     }
-  }
-  if (i == 10 && ip->type == T_SYMLINK)
-  {
-    iunlockput(ip);
-    end_op();
-    return -1;
+    if (i == 10 && ip->type == T_SYMLINK)
+    {
+      iunlock(tmp_ip);
+      iunlockput(ip);
+      end_op();
+      return -1;
+    }
   }
   #endif
   else {
@@ -391,9 +403,10 @@ sys_open(void)
   }
   f->ip = ip;
   f->readable = !(omode & O_WRONLY);
+  #ifndef LAB_FS
   f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
-  #ifdef LAB_FS
-  f->writable = omode & O_NOFOLLOW;
+  #else
+  f->writable = (omode & O_WRONLY) || (omode & O_RDWR) || (omode & O_NOFOLLOW);
   #endif
 
   if((omode & O_TRUNC) && ip->type == T_FILE){
@@ -576,17 +589,30 @@ int sys_symlink(void)
     return -1;
 
   begin_op();
-  if((ip = namei(new)) == 0)
+  ip = namei(new);
+  if(ip != 0 && ip->type != T_SYMLINK)
   {
     end_op();
     return -1;
   }
+  else if (ip == 0)
+  {
+    ip = create(new, T_SYMLINK, 0, 0);
+    if(ip == 0)
+    {
+      end_op();
+      return -1;
+    }
+  }
+  ilock(ip);
 
   bp = bread(ip->dev, ip->inum);
   safestrcpy((char *)bp->data, old, strlen(old));
   log_write(bp);
   brelse(bp);
 
+  iunlock(ip);
+  end_op();
   return 0;
 }
 #endif

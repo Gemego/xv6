@@ -532,7 +532,25 @@ sys_connect(void)
 #ifdef LAB_FS
 int sys_symlink(void)
 {
-  
+  char new[MAXPATH], old[MAXPATH];
+  struct inode *ip;
+  struct buf *bp;
+
+  if(argstr(0, old, MAXPATH) < 0 || argstr(1, new, MAXPATH) < 0)
+    return -1;
+
+  begin_op();
+  if((ip = namei(new)) == 0)
+  {
+    end_op();
+    return -1;
+  }
+
+  bp = bread(ip->dev, ip->inum);
+  safestrcpy((char *)bp->data, old, strlen(old));
+  log_write(bp);
+  brelse(bp);
+
   return 0;
 }
 #endif

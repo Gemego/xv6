@@ -436,6 +436,7 @@ bmap(struct inode *ip, uint bn)
       if(addr == 0)
         return 0;
     }
+    brelse(bp);
     bp = bread(ip->dev, addr);
     a = (uint*)bp->data;
     bn -= idirc_idx * NINDIRECT;

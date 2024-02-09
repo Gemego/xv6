@@ -352,13 +352,49 @@ sys_open(void)
   if(ip->type == T_DEVICE){
     f->type = FD_DEVICE;
     f->major = ip->major;
-  } else {
+  }
+  #ifdef LAB_FS
+  else if (ip->type == T_SYMLINK && !(omode & O_NOFOLLOW))
+  {
+    struct inode *tmp_ip;
+    struct buf *tmp_bp = bread(ip->dev, ip->inum);
+    uint *a = (uint*)tmp_bp->data;
+    int i;
+    for (i = 0; i < 10; i++)  // Can't be too many recursive link, only 10 times link
+    {
+      if ((tmp_ip = namei((char *)a)) == 0)
+      {
+        iunlockput(ip);
+        end_op();
+        return -1;
+      }
+      if (tmp_ip->type == T_SYMLINK)
+      {
+        tmp_bp = bread(tmp_ip->dev, ip->tmp_ip);
+        a = (uint*)tmp_bp->data;
+        ip = tmp_ip;
+      }
+      else
+        break;
+    }
+  }
+  if (i == 10 && ip->type == T_SYMLINK)
+  {
+    iunlockput(ip);
+    end_op();
+    return -1;
+  }
+  #endif
+  else {
     f->type = FD_INODE;
     f->off = 0;
   }
   f->ip = ip;
   f->readable = !(omode & O_WRONLY);
   f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
+  #ifdef LAB_FS
+  f->writable = omode & O_NOFOLLOW;
+  #endif
 
   if((omode & O_TRUNC) && ip->type == T_FILE){
     itrunc(ip);

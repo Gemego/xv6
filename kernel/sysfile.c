@@ -387,7 +387,7 @@ sys_open(void)
         }
         else
         {
-          iunlockput(tmp_ip);
+          iunlock(tmp_ip);
           f->ip = tmp_ip;
           break;
         }

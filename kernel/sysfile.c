@@ -370,7 +370,7 @@ sys_open(void)
       int i = 0;
       for (; i < 10; i++)  // Can't be too many recursive link, only 10 times link
       {
-        if (!strncmp(a, path, MAXPATH) || ((tmp_ip = namei(/*(char *)*/a)) == 0))
+        if (!strncmp(a, path, MAXPATH) || ((tmp_ip = namei(a)) == 0))
         {
           iunlock(ip);
           end_op();

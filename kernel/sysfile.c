@@ -330,10 +330,6 @@ sys_open(void)
       end_op();
       return -1;
     }
-    if ((omode & 0x020) && ip->lock.locked)
-    {
-      printf("0x020 in sys_open!\npath = %s\n", path);
-    }
     ilock(ip);
     if(ip->type == T_DIR && omode != O_RDONLY){
       iunlockput(ip);
@@ -363,17 +359,18 @@ sys_open(void)
   #ifdef LAB_FS
   else if (ip->type == T_SYMLINK)
   {
-    printf("sys_open: here?\nomode = %d\n", omode);
     if (!(omode & O_NOFOLLOW))
     {
       struct inode *tmp_ip;
       struct buf *tmp_bp;
       tmp_bp = bread(ip->dev, ip->inum);
-      uint *a = (uint*)tmp_bp->data;
+      char a[MAXPATH] = {0};
+      safestrcpy(a, (char *)tmp_bp->data, MAXPATH);
+      brelse(tmp_bp);
       int i = 0;
       for (; i < 10; i++)  // Can't be too many recursive link, only 10 times link
       {
-        if ((tmp_ip = namei((char *)a)) == 0)
+        if (!strncmp(a, path, MAXPATH) || ((tmp_ip = namei(/*(char *)*/a)) == 0))
         {
           iunlock(ip);
           end_op();
@@ -384,26 +381,24 @@ sys_open(void)
         if (tmp_ip->type == T_SYMLINK)
         {
           tmp_bp = bread(tmp_ip->dev, tmp_ip->inum);
-          a = (uint*)tmp_bp->data;
+          safestrcpy(a, (char *)tmp_bp->data, MAXPATH);
+          brelse(tmp_bp);
           iunlock(tmp_ip);
-          iunlock(ip);
-          ip = tmp_ip;
         }
         else
         {
-          ip = tmp_ip;
+          iunlock(tmp_ip);
+          f->ip = tmp_ip;
           break;
         }
+        f->ip = tmp_ip;
       }
       if (i == 10 && ip->type == T_SYMLINK)
       {
-        iunlock(tmp_ip);
         iunlock(ip);
         end_op();
         return -1;
       }
-      ip = tmp_ip;
-      // printf("sys_open str: %s\n", (char *)a);
     }
     f->type = FD_INODE;
     f->off = 0;
@@ -413,7 +408,12 @@ sys_open(void)
     f->type = FD_INODE;
     f->off = 0;
   }
+  #ifndef LAB_FS
   f->ip = ip;
+  #else
+  if ((ip->type != T_SYMLINK) || omode & O_NOFOLLOW)
+    f->ip = ip;
+  #endif
   f->readable = !(omode & O_WRONLY);
   f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
 

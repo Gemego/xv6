@@ -89,7 +89,6 @@ testsymlink(void)
   unlink("/testsymlink/a");
   if(open("/testsymlink/b", O_RDWR | 0x020) >= 0)
     fail("Should not be able to open b after deleting a");
-  printf("symlinktest: here?\n");
 
   r = symlink("/testsymlink/b", "/testsymlink/a");
   if(r < 0)

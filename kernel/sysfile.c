@@ -401,8 +401,9 @@ sys_open(void)
         }
         f->ip = tmp_ip;
       }
-      if (i == 10 && ip->type == T_SYMLINK)
+      if (i == 10)
       {
+        fileclose(f);
         iunlockput(ip);
         end_op();
         return -1;
@@ -429,7 +430,14 @@ sys_open(void)
     itrunc(ip);
   }
 
+  #ifndef LAB_FS
   iunlock(ip);
+  #else
+  if ((ip->type == T_SYMLINK) && !(omode & O_NOFOLLOW))
+    iunlockput(ip);
+  else
+    iunlock(ip);
+  #endif
   end_op();
 
   return fd;

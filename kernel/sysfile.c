@@ -592,7 +592,6 @@ int sys_symlink(void)
   char new[MAXPATH], old[MAXPATH];
   struct inode *ip;
   struct buf *bp;
-  // int ip_newed = 0;
 
   if(argstr(0, old, MAXPATH) < 0 || argstr(1, new, MAXPATH) < 0)
     return -1;
@@ -608,8 +607,6 @@ int sys_symlink(void)
       end_op();
       return -1;
     }
-    // ip_newed += 1;
-    // iunlock(ip);
   }
   else if (ip == 0)
   {
@@ -620,14 +617,12 @@ int sys_symlink(void)
       return -1;
     }
   }
-  // printf("sys_symlink: here?\n");
   bp = bread(ip->dev, ip->inum);
   safestrcpy((char *)bp->data, old, strlen(old) + 1);
   log_write(bp);
   brelse(bp);
 
-  // if (!ip_newed)
-    iunlock(ip);
+  iunlock(ip);
   end_op();
   return 0;
 }

@@ -63,7 +63,6 @@ testsymlink(void)
   printf("Start: test symlinks\n");
 
   mkdir("/testsymlink");
-
   fd1 = open("/testsymlink/a", O_CREATE | O_RDWR);
   if(fd1 < 0) fail("failed to open a");
 
@@ -87,7 +86,7 @@ testsymlink(void)
     fail("failed to read bytes from b");
 
   unlink("/testsymlink/a");
-  if(open("/testsymlink/b", O_RDWR | 0x020) >= 0)
+  if(open("/testsymlink/b", O_RDWR) >= 0)
     fail("Should not be able to open b after deleting a");
 
   r = symlink("/testsymlink/b", "/testsymlink/a");

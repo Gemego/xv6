@@ -372,7 +372,7 @@ sys_open(void)
       {
         if (!strncmp(a, path, MAXPATH) || ((tmp_ip = namei(a)) == 0))
         {
-          iunlock(ip);
+          iunlockput(ip);
           end_op();
           return -1;
         }
@@ -383,11 +383,11 @@ sys_open(void)
           tmp_bp = bread(tmp_ip->dev, tmp_ip->inum);
           safestrcpy(a, (char *)tmp_bp->data, MAXPATH);
           brelse(tmp_bp);
-          iunlock(tmp_ip);
+          iunlockput(tmp_ip);
         }
         else
         {
-          iunlock(tmp_ip);
+          iunlockput(tmp_ip);
           f->ip = tmp_ip;
           break;
         }
@@ -395,7 +395,7 @@ sys_open(void)
       }
       if (i == 10 && ip->type == T_SYMLINK)
       {
-        iunlock(ip);
+        iunlockput(ip);
         end_op();
         return -1;
       }
@@ -603,7 +603,7 @@ int sys_symlink(void)
     ilock(ip);
     if (ip->type != T_SYMLINK)
     {
-      iunlock(ip);
+      iunlockput(ip);
       end_op();
       return -1;
     }
@@ -613,6 +613,7 @@ int sys_symlink(void)
     ip = create(new, T_SYMLINK, 0, 0);
     if(ip == 0)
     {
+      iunlockput(ip);
       end_op();
       return -1;
     }
@@ -622,7 +623,7 @@ int sys_symlink(void)
   log_write(bp);
   brelse(bp);
 
-  iunlock(ip);
+  iunlockput(ip);
   end_op();
   return 0;
 }

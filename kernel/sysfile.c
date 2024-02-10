@@ -378,6 +378,14 @@ sys_open(void)
         }
 
         ilock(tmp_ip);
+        if (tmp_ip->nlink == 0)
+        {
+          iunlockput(tmp_ip);
+          iunlockput(ip);
+          end_op();
+          return -1;
+        }
+
         if (tmp_ip->type == T_SYMLINK)
         {
           tmp_bp = bread(tmp_ip->dev, tmp_ip->inum);

@@ -65,7 +65,7 @@ usertrap(void)
     intr_on();
 
     syscall();
-  } 
+  }
     #ifdef LAB_COW
     else if (r_scause() == 15 && r_stval() < MAXVA) {  // store page fault
     char *mem;
@@ -101,6 +101,27 @@ usertrap(void)
       setkilled(p);
     }
   } 
+    #endif
+    #ifdef LAB_MMAP
+    else if (r_scause() == 15 && r_stval() < MAXVA) {  // store page fault
+      char *mem;
+
+      uint64 stval = r_stval(), pa; // stval stores the faulting virtual address.
+      uint flags;
+      pte_t *pte_p;
+
+      pte_p = walk(p->pagetable, stval, 0);
+      pa = PTE2PA(*pte_p);
+      flags = PTE_FLAGS(*pte_p);
+
+      if((mem = kalloc()) == 0)
+        exit(-1);
+      memmove(mem, (char*)pa, PGSIZE);
+      uvmunmap(p->pagetable, PGROUNDDOWN(stval), 1, 0);
+
+      if (mappages(p->pagetable, PGROUNDDOWN(stval), PGSIZE, (uint64)mem, flags) != 0)
+        exit(-1);
+    }
     #endif
     else if((which_dev = devintr()) != 0){
     // ok

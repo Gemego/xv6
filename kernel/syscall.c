@@ -103,6 +103,8 @@ extern uint64 sys_mkdir(void);
 extern uint64 sys_close(void);
 extern uint64 sys_trace(void);
 extern uint64 sys_sysinfo(void);
+extern uint64 sys_mmap(void);
+extern uint64 sys_munmap(void);
 
 #ifdef LAB_NET
 extern uint64 sys_connect(void);
@@ -159,6 +161,10 @@ static uint64 (*syscalls[])(void) = {
 #ifdef LAB_FS
 [SYS_symlink] sys_symlink,
 #endif
+#ifdef LAB_MMAP
+[SYS_mmap] sys_mmap,
+[SYS_munmap] sys_munmap,
+#endif
 };
 
 static char* syscalls_name[] = {
@@ -191,13 +197,17 @@ static char* syscalls_name[] = {
   #ifdef LAB_PGTBL
   "pgaccess",
   "pgdirty",
-  #endif
+  #endif  
   #ifdef LAB_TRAPS
   "sigalarm",
   "sigreturn",
   #endif
   #ifdef LAB_FS
   "symlink",
+  #endif
+  #ifdef LAB_MMAP
+  "mmap",
+  "munmap",
   #endif
 };
 

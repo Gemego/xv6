@@ -206,3 +206,48 @@ int sys_sigreturn(void)
   return p->user_trapframe->a0;
 }
 #endif
+
+#ifdef LAB_MMAP
+uint64 find_free_vm()
+{
+  uint64 va = 0;
+  while (walkaddr(myproc()->pagetable) != 0)  // find a unused va
+    va += PGSIZE;
+  
+  return va;
+}
+
+int sys_mmap(void)
+{
+  void *addr;
+  size_t len;
+  int prot;
+  int flags;
+  int fd;
+  off_t offset;
+
+  argaddr(0, &addr);
+  argint(0, &len);
+  argint(0, &prot);
+  argint(0, &flags);
+  argint(0, &fd);
+  argaddr(0, &fd);
+
+  for (int i = 0; i < 16; i++)
+  {
+    if (myproc()->VMA[i].valid == 0)
+    {
+      VMA[i].valid = 1;
+      VMA[i].addr = find_free_vm();
+    }
+    
+  }
+  
+
+  return -1;
+}
+int sys_munmap(void)
+{
+  return -1; 
+}
+#endif

@@ -81,6 +81,19 @@ struct trapframe {
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
+#ifdef LAB_MMAP
+struct VMA {
+  int valid;        // 0 when invalid, which is empty element
+  uint64 addr;      // where it starts, 0 in xv6
+  int len;
+  int prot;         // read/write
+  int flags;        // shared/private
+  int off;          // offset
+  struct file* f;
+  uint64 mapcnt;    // mapped pages count
+ };
+ #endif
+
 // Per-process state
 struct proc {
   struct spinlock lock;
@@ -115,5 +128,8 @@ struct proc {
   int in_handler;
 
   struct trapframe *user_trapframe;
+  #endif
+  #ifdef LAB_MMAP
+  struct VMA VMA[16];
   #endif
 };

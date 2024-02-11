@@ -66,6 +66,9 @@ procinit(void)
       p->in_handler = 0;
       p->user_trapframe = 0;
       #endif
+      #ifdef LAB_MMAP
+      memset(p->VMA, 0, sizeof(VMA));
+      #endif
   }
 }
 

@@ -44,6 +44,11 @@ int sigreturn(void);
 #ifdef LAB_FS
 int symlink(const char *target, const char *path);
 #endif
+#ifdef LAB_MMAP
+void *mmap(void *addr, size_t len, int prot, int flags,
+         int fd, off_t offset);
+int munmap(void *addr, size_t length);
+#endif
 
 // ulib.c
 int stat(const char*, struct stat*);

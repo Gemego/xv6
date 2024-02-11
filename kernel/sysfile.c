@@ -380,6 +380,7 @@ sys_open(void)
         ilock(tmp_ip);
         if (tmp_ip->nlink == 0)
         {
+          fileclose(f);
           iunlockput(tmp_ip);
           iunlockput(ip);
           end_op();

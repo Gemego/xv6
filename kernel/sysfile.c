@@ -336,6 +336,45 @@ sys_open(void)
       end_op();
       return -1;
     }
+    #ifdef LAB_FS
+    if (!(omode & O_NOFOLLOW) && ip->type == T_SYMLINK)
+    {
+      struct inode *tmp_ip;
+      int i;
+      char a[MAXPATH];
+      memset(a, 0, MAXPATH);
+      for (i = 0; i < 10; i++)
+      {
+        if(readi(ip, 0, (uint64)a, 0, MAXPATH) == 0 || (tmp_ip = namei(a)) == 0)
+        {
+          iunlockput(ip);
+          end_op();
+          return -1;
+        }
+        
+        ilock(tmp_ip);
+        if (tmp_ip->nlink == 0)
+        {
+          iunlockput(tmp_ip);
+          iunlockput(ip);
+          end_op();
+          return -1;
+        }
+
+        memset(a, 0, MAXPATH);
+        iunlockput(ip);
+        ip = tmp_ip;      
+        if (tmp_ip->type != T_SYMLINK)
+          break;
+      }
+      if (i == 10)
+      {
+        iunlockput(ip);
+        end_op();
+        return -1;
+      }
+    }
+    #endif
   }
 
   if(ip->type == T_DEVICE && (ip->major < 0 || ip->major >= NDEV)){
@@ -356,74 +395,11 @@ sys_open(void)
     f->type = FD_DEVICE;
     f->major = ip->major;
   }
-  #ifdef LAB_FS
-  else if (ip->type == T_SYMLINK)
-  {
-    if (!(omode & O_NOFOLLOW))
-    {
-      struct inode *tmp_ip;
-      struct buf *tmp_bp;
-      tmp_bp = bread(ip->dev, ip->inum);
-      char a[MAXPATH] = {0};
-      safestrcpy(a, (char *)tmp_bp->data, MAXPATH);
-      brelse(tmp_bp);
-      int i = 0;
-      for (; i < 10; i++)  // Can't be too many recursive link, only 10 times link
-      {
-        if (!strncmp(a, path, MAXPATH) || ((tmp_ip = namei(a)) == 0))
-        {
-          iunlockput(ip);
-          end_op();
-          return -1;
-        }
-
-        ilock(tmp_ip);
-        if (tmp_ip->nlink == 0)
-        {
-          fileclose(f);
-          iunlockput(tmp_ip);
-          iunlockput(ip);
-          end_op();
-          return -1;
-        }
-
-        if (tmp_ip->type == T_SYMLINK)
-        {
-          tmp_bp = bread(tmp_ip->dev, tmp_ip->inum);
-          safestrcpy(a, (char *)tmp_bp->data, MAXPATH);
-          brelse(tmp_bp);
-          iunlockput(tmp_ip);
-        }
-        else
-        {
-          iunlock(tmp_ip);
-          f->ip = tmp_ip;
-          break;
-        }
-        f->ip = tmp_ip;
-      }
-      if (i == 10)
-      {
-        fileclose(f);
-        iunlockput(ip);
-        end_op();
-        return -1;
-      }
-    }
-    f->type = FD_INODE;
-    f->off = 0;
-  }
-  #endif
   else {
     f->type = FD_INODE;
     f->off = 0;
   }
-  #ifndef LAB_FS
   f->ip = ip;
-  #else
-  if ((ip->type != T_SYMLINK) || omode & O_NOFOLLOW)
-    f->ip = ip;
-  #endif
   f->readable = !(omode & O_WRONLY);
   f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
 
@@ -431,14 +407,7 @@ sys_open(void)
     itrunc(ip);
   }
 
-  #ifndef LAB_FS
   iunlock(ip);
-  #else
-  if ((ip->type == T_SYMLINK) && !(omode & O_NOFOLLOW))
-    iunlockput(ip);
-  else
-    iunlock(ip);
-  #endif
   end_op();
 
   return fd;
@@ -608,7 +577,6 @@ int sys_symlink(void)
 {
   char new[MAXPATH], old[MAXPATH];
   struct inode *ip;
-  struct buf *bp;
 
   if(argstr(0, old, MAXPATH) < 0 || argstr(1, new, MAXPATH) < 0)
     return -1;
@@ -635,11 +603,9 @@ int sys_symlink(void)
       return -1;
     }
   }
-  bp = bread(ip->dev, ip->inum);
-  safestrcpy((char *)bp->data, old, strlen(old) + 1);
-  log_write(bp);
-  brelse(bp);
-
+  if(writei(ip, 0, (uint64)old, 0, strlen(old) + 1) != strlen(old) + 1)
+    return -1;
+  
   iunlockput(ip);
   end_op();
   return 0;

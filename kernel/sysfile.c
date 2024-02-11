@@ -16,6 +16,9 @@
 #include "file.h"
 #include "fcntl.h"
 
+#ifdef LAB_FS
+#include "buf.h"
+#endif
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
 static int
@@ -333,6 +336,45 @@ sys_open(void)
       end_op();
       return -1;
     }
+    #ifdef LAB_FS
+    if (!(omode & O_NOFOLLOW) && ip->type == T_SYMLINK)
+    {
+      struct inode *tmp_ip;
+      int i;
+      char a[MAXPATH];
+      memset(a, 0, MAXPATH);
+      for (i = 0; i < 10; i++)
+      {
+        if(readi(ip, 0, (uint64)a, 0, MAXPATH) == 0 || (tmp_ip = namei(a)) == 0)
+        {
+          iunlockput(ip);
+          end_op();
+          return -1;
+        }
+        
+        ilock(tmp_ip);
+        if (tmp_ip->nlink == 0)
+        {
+          iunlockput(tmp_ip);
+          iunlockput(ip);
+          end_op();
+          return -1;
+        }
+
+        memset(a, 0, MAXPATH);
+        iunlockput(ip);
+        ip = tmp_ip;      
+        if (tmp_ip->type != T_SYMLINK)
+          break;
+      }
+      if (i == 10)
+      {
+        iunlockput(ip);
+        end_op();
+        return -1;
+      }
+    }
+    #endif
   }
 
   if(ip->type == T_DEVICE && (ip->major < 0 || ip->major >= NDEV)){
@@ -352,7 +394,8 @@ sys_open(void)
   if(ip->type == T_DEVICE){
     f->type = FD_DEVICE;
     f->major = ip->major;
-  } else {
+  }
+  else {
     f->type = FD_INODE;
     f->off = 0;
   }
@@ -503,3 +546,68 @@ sys_pipe(void)
   }
   return 0;
 }
+
+#ifdef LAB_NET
+int
+sys_connect(void)
+{
+  struct file *f;
+  int fd;
+  uint32 raddr;
+  uint32 rport;
+  uint32 lport;
+
+  argint(0, (int*)&raddr);
+  argint(1, (int*)&lport);
+  argint(2, (int*)&rport);
+
+  if(sockalloc(&f, raddr, lport, rport) < 0)
+    return -1;
+  if((fd=fdalloc(f)) < 0){
+    fileclose(f);
+    return -1;
+  }
+
+  return fd;
+}
+#endif
+
+#ifdef LAB_FS
+int sys_symlink(void)
+{
+  char new[MAXPATH], old[MAXPATH];
+  struct inode *ip;
+
+  if(argstr(0, old, MAXPATH) < 0 || argstr(1, new, MAXPATH) < 0)
+    return -1;
+
+  begin_op();
+  ip = namei(new);
+  if(ip != 0) 
+  {
+    ilock(ip);
+    if (ip->type != T_SYMLINK)
+    {
+      iunlockput(ip);
+      end_op();
+      return -1;
+    }
+  }
+  else if (ip == 0)
+  {
+    ip = create(new, T_SYMLINK, 0, 0);
+    if(ip == 0)
+    {
+      iunlockput(ip);
+      end_op();
+      return -1;
+    }
+  }
+  if(writei(ip, 0, (uint64)old, 0, strlen(old) + 1) != strlen(old) + 1)
+    return -1;
+  
+  iunlockput(ip);
+  end_op();
+  return 0;
+}
+#endif

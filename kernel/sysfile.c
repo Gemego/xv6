@@ -613,7 +613,7 @@ int sys_symlink(void)
 #endif
 
 #ifdef LAB_MMAP
-int sys_mmap(void)
+uint64 sys_mmap(void)
 {
   uint64 addr;
   int len;
@@ -632,11 +632,8 @@ int sys_mmap(void)
   argaddr(5, &off);
 
   if (!(f->writable)  && (prot & PROT_WRITE) && (flags == MAP_SHARED))
-  {
     return -1;
-  }
   
-
   struct VMA *vma = myproc()->vma;
   int i;
   for (i = 0; i < 16; i++)
@@ -644,21 +641,21 @@ int sys_mmap(void)
     if (vma[i].valid == 0)
     {
       vma[i].valid = 1;
-      vma[i].addr = myproc()->sz;
+      vma[i].addr = myproc()->map_start - (uint64)len;
       vma[i].len = len;
       vma[i].prot = prot;
       vma[i].flags = flags;
       vma[i].off = off;
       vma[i].f = f;
-      vma[i].mapcnt += len / PGSIZE;
+      vma[i].mapcnt = 0;
 
       filedup(f);
-      myproc()->sz += len;
+      myproc()->map_start -= (uint64)len;
       break;
     }
   }
   if (i == 16)
-    return -1;
+    return 0xffffffffffffffff;;
 
   return vma[i].addr;
 }
@@ -674,17 +671,18 @@ int sys_munmap(void)
   int i;
   for (i = 0; i < 16; i++)
   {
-    if (vma[i].addr == addr || (vma[i].addr + vma[i].len) == (addr + len))
+    if (vma[i].valid && vma[i].mapcnt && (vma[i].addr == addr || 
+        (vma[i].addr + vma[i].len) == (addr + len)))
     {
       if (vma[i].flags == MAP_SHARED)
         filewrite(vma[i].f, addr, len);
 
       uvmunmap(myproc()->pagetable, addr, len / PGSIZE, 1);      
 
-      vma[i].addr += len;
-      vma[i].off += len;
       vma[i].len -= len;
+      vma[i].addr += len;
       vma[i].mapcnt -= len / PGSIZE;
+
       if (vma[i].len == 0)
       {
         fileclose(vma[i].f);
@@ -692,6 +690,8 @@ int sys_munmap(void)
       }
       return 0;
     }
+    else if (vma[i].valid && !vma[i].mapcnt)
+      return 0;
   }
 
   return -1; 

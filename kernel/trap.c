@@ -123,7 +123,7 @@ usertrap(void)
   } 
     #endif
     #ifdef LAB_MMAP
-    else if (r_scause() == 13 && r_stval() < MAXVA) {  // load page fault
+    else if (r_scause() == 13 && r_stval() < (MAXVA - 2 * PGSIZE)) {  // load page fault
       char *mem;
       uint64 stval = r_stval(); // stval stores the faulting virtual address.
 
@@ -131,21 +131,22 @@ usertrap(void)
       int i;
       for (i = 0; i < 16; i++)
       {
-        if (vma[i].addr <= PGROUNDDOWN(stval) && PGROUNDDOWN(stval) <= (vma[i].addr + vma[i].len) 
+        if (vma[i].addr <= PGROUNDDOWN(stval) && PGROUNDDOWN(stval) < (vma[i].addr + vma[i].len) 
             && vma[i].valid)
         {
           ilock(vma[i].f->ip);
           if((mem = kalloc()) == 0)
             exit(-1);
           memset(mem, 0, PGSIZE);
-          if(readi(vma[i].f->ip, 0, 
+          if(readi(vma[i].f->ip, 0,
                    (uint64)mem, vma[i].off + PGROUNDDOWN(stval) - vma[i].addr, 
                    PGSIZE) == 0)
             exit(-1);
           if (mappages(p->pagetable, PGROUNDDOWN(stval), PGSIZE, (uint64)mem, 
-                      (vma[i].prot << 1) | PTE_U | PTE_V) != 0)
+                      (vma[i].prot << 1) | PTE_U ) != 0)
             exit(-1);
           iunlock(vma[i].f->ip);
+          vma[i].mapcnt += 1;
           break;
         }
       }

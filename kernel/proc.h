@@ -130,6 +130,7 @@ struct proc {
   struct trapframe *user_trapframe;
   #endif
   #ifdef LAB_MMAP
+  uint64 map_start;
   struct VMA vma[16];
   #endif
 };

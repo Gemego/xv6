@@ -184,8 +184,8 @@ mmap_test(void)
     char b;
     if (read(fd, &b, 1) != 1)
       err("read (1)");
-    if (b != 'Z'){printf("i = %d\n", i);
-      err("file does not contain modifications");}
+    if (b != 'Z')
+      err("file does not contain modifications");
   }
   if (close(fd) == -1)
     err("close (4)");
@@ -235,7 +235,6 @@ mmap_test(void)
     err("mmap1 mismatch");
   if(memcmp(p2, "67890", 5) != 0)
     err("mmap2 mismatch");
-
   if (munmap(p1, PGSIZE) == -1)
     err("munmap (5)");
   if(memcmp(p2, "67890", 5) != 0)

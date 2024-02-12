@@ -67,7 +67,9 @@ procinit(void)
       p->user_trapframe = 0;
       #endif
       #ifdef LAB_MMAP
-      memset(p->vma, 0, sizeof(p->vma));
+      for (int i = 0; i < 16; i++)
+        p->vma[i].valid = 0;
+      p->map_start = MAXVA - 2 * PGSIZE; // no trapframe and trampoline
       #endif
   }
 }
@@ -166,6 +168,9 @@ found:
     (p->usyscall)->pid = p->pid;
   }
   #endif
+  #ifdef LAB_MMAP
+  p->map_start = MAXVA - 2 * PGSIZE; // no trapframe and trampoline
+  #endif
 
   // An empty user page table.
   p->pagetable = proc_pagetable(p);
@@ -217,6 +222,9 @@ freeproc(struct proc *p)
   if (p->user_trapframe)
     kfree((void*)p->user_trapframe);
   p->user_trapframe = 0;
+  #endif
+  #ifdef LAB_MMAP
+  p->map_start = MAXVA - 2 * PGSIZE;
   #endif
 }
 

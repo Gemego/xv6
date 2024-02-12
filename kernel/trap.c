@@ -16,6 +16,26 @@ void kernelvec();
 
 extern int devintr();
 
+#ifdef LAB_MMAP
+struct file {
+#ifdef LAB_NET
+  enum { FD_NONE, FD_PIPE, FD_INODE, FD_DEVICE, FD_SOCK } type;
+#else
+  enum { FD_NONE, FD_PIPE, FD_INODE, FD_DEVICE } type;
+#endif
+  int ref; // reference count
+  char readable;
+  char writable;
+  struct pipe *pipe; // FD_PIPE
+  struct inode *ip;  // FD_INODE and FD_DEVICE
+#ifdef LAB_NET
+  struct sock *sock; // FD_SOCK
+#endif
+  uint off;          // FD_INODE
+  short major;       // FD_DEVICE
+};
+#endif
+
 void
 trapinit(void)
 {
@@ -103,31 +123,37 @@ usertrap(void)
   } 
     #endif
     #ifdef LAB_MMAP
-    else if (r_scause() == 15 && r_stval() < MAXVA) {  // store page fault
+    else if (r_scause() == 13 && r_stval() < MAXVA) {  // load page fault
       char *mem;
+      uint64 stval = r_stval(); // stval stores the faulting virtual address.
 
-      uint64 stval = r_stval(), pa; // stval stores the faulting virtual address.
-      uint flags;
-      pte_t *pte_p;
-
-      pte_p = walk(p->pagetable, stval, 0);
-      pa = PTE2PA(*pte_p);
-      flags = PTE_FLAGS(*pte_p);
-
-      if((mem = kalloc()) == 0)
-        exit(-1);
-      memmove(mem, (char*)pa, PGSIZE);
-      uvmunmap(p->pagetable, PGROUNDDOWN(stval), 1, 0);
-
-      if (mappages(p->pagetable, PGROUNDDOWN(stval), PGSIZE, (uint64)mem, flags) != 0)
-        exit(-1);
+      struct VMA *vma = myproc()->vma;
+      int i;
+      for (i = 0; i < 16; i++)
+      {
+        if (vma[i].addr <= PGROUNDDOWN(stval) && PGROUNDDOWN(stval) <= (vma[i].addr + vma[i].len) 
+            && vma[i].valid)
+        {
+          ilock(vma[i].f->ip);
+          if((mem = kalloc()) == 0)
+            exit(-1);
+          memset(mem, 0, PGSIZE);
+          if(readi(vma[i].f->ip, 0, 
+                   (uint64)mem, vma[i].off + PGROUNDDOWN(stval) - vma[i].addr, 
+                   PGSIZE) == 0)
+            exit(-1);
+          if (mappages(p->pagetable, PGROUNDDOWN(stval), PGSIZE, (uint64)mem, 
+                      (vma[i].prot << 1) | PTE_U | PTE_V) != 0)
+            exit(-1);
+          iunlock(vma[i].f->ip);
+          break;
+        }
+      }
     }
     #endif
     else if((which_dev = devintr()) != 0){
     // ok
-  } else {
-
-    
+    } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
     printf("            name=%s\n", p->name);

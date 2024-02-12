@@ -91,8 +91,8 @@ struct VMA {
   int off;          // offset
   struct file* f;
   uint64 mapcnt;    // mapped pages count
- };
- #endif
+};
+#endif
 
 // Per-process state
 struct proc {
@@ -130,6 +130,6 @@ struct proc {
   struct trapframe *user_trapframe;
   #endif
   #ifdef LAB_MMAP
-  struct VMA VMA[16];
+  struct VMA vma[16];
   #endif
 };

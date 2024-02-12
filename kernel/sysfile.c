@@ -611,3 +611,56 @@ int sys_symlink(void)
   return 0;
 }
 #endif
+
+#ifdef LAB_MMAP
+int sys_mmap(void)
+{
+  uint64 addr;
+  int len;
+  int prot;
+  int flags;
+  int fd;
+  uint64 off;
+
+  struct file *f;
+
+  argaddr(0, &addr);
+  argint(1, &len);
+  argint(2, &prot);
+  argint(3, &flags);
+  argfd(4, &fd, &f);
+  argaddr(5, &off);
+
+  struct VMA *vma = myproc()->vma;
+  int i;
+  for (i = 0; i < 16; i++)
+  {
+    if (vma[i].valid == 0)
+    {
+      vma[i].valid = 1;
+      vma[i].addr = myproc()->sz;
+      vma[i].len = len;
+      vma[i].prot = prot;
+      vma[i].flags = flags;
+      vma[i].off = off;
+      vma[i].f = f;
+      vma[i].mapcnt += 1;
+
+      filedup(f);
+      myproc()->sz += len;
+      break;
+    }
+  }
+  if (i == 16)
+    return -1;
+
+  return vma[i].addr;
+}
+
+int sys_munmap(void)
+{
+  
+
+  return -1; 
+}
+#endif

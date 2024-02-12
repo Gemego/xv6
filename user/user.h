@@ -45,7 +45,7 @@ int sigreturn(void);
 int symlink(const char *target, const char *path);
 #endif
 #ifdef LAB_MMAP
-void *mmap(void *addr, size_t len, int prot, int flags,
+void* mmap(void *addr, size_t len, int prot, int flags,
            int fd, off_t offset);
 int munmap(void *addr, size_t length);
 #endif
@@ -65,7 +65,7 @@ void* malloc(uint);
 void free(void*);
 int atoi(const char*);
 int memcmp(const void *, const void *, uint);
-void *memcpy(void *, const void *, uint);
+void* memcpy(void *, const void *, uint);
 #ifdef LAB_LOCK
 int statistics(void*, int);
 #endif

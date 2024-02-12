@@ -631,6 +631,12 @@ int sys_mmap(void)
   argfd(4, &fd, &f);
   argaddr(5, &off);
 
+  if (!(f->writable)  && (prot & PROT_WRITE) && (flags == MAP_SHARED))
+  {
+    return -1;
+  }
+  
+
   struct VMA *vma = myproc()->vma;
   int i;
   for (i = 0; i < 16; i++)
@@ -644,7 +650,7 @@ int sys_mmap(void)
       vma[i].flags = flags;
       vma[i].off = off;
       vma[i].f = f;
-      vma[i].mapcnt += 1;
+      vma[i].mapcnt += len / PGSIZE;
 
       filedup(f);
       myproc()->sz += len;
@@ -659,7 +665,34 @@ int sys_mmap(void)
 
 int sys_munmap(void)
 {
-  
+  uint64 addr;
+  int len;
+  argaddr(0, &addr);
+  argint(1, &len);
+
+  struct VMA *vma = myproc()->vma;
+  int i;
+  for (i = 0; i < 16; i++)
+  {
+    if (vma[i].addr == addr || (vma[i].addr + vma[i].len) == (addr + len))
+    {
+      if (vma[i].flags == MAP_SHARED)
+        filewrite(vma[i].f, addr, len);
+
+      uvmunmap(myproc()->pagetable, addr, len / PGSIZE, 1);      
+
+      vma[i].addr += len;
+      vma[i].off += len;
+      vma[i].len -= len;
+      vma[i].mapcnt -= len / PGSIZE;
+      if (vma[i].len == 0)
+      {
+        fileclose(vma[i].f);
+        vma[i].valid = 0;
+      }
+      return 0;
+    }
+  }
 
   return -1; 
 }

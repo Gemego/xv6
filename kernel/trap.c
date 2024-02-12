@@ -149,6 +149,8 @@ usertrap(void)
           break;
         }
       }
+      if (i == 16)
+        exit(-1);
     }
     #endif
     else if((which_dev = devintr()) != 0){

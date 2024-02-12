@@ -365,6 +365,17 @@ fork(void)
   }
   np->sz = p->sz;
 
+  #ifdef LAB_MMAP
+  np->map_start = p->map_start;
+  struct VMA *vma = p->vma;
+  for (int i = 0; i < 16; i++)
+  {
+    np->vma[i] = vma[i];
+    if (vma[i].valid)
+      filedup(vma[i].f);
+  }
+  #endif
+
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
 
@@ -450,6 +461,17 @@ exit(int status)
   p->state = ZOMBIE;
 
   release(&wait_lock);
+
+  #ifdef LAB_MMAP
+  uint64 map_start = p->map_start;
+
+  while (map_start < MAXVA - 2 * PGSIZE)
+  {
+    if (walkaddr(myproc()->pagetable, map_start) != 0)
+      uvmunmap(myproc()->pagetable, map_start, 1, 1);
+    map_start += PGSIZE;
+  }
+  #endif
 
   // Jump into the scheduler, never to return.
   sched();
